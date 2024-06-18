@@ -1,0 +1,74 @@
+Legal context (#Heading)
+    Although the Republic of South Africa (South Africa) has had exchange controls since 1939, the foundation thereof is the Currency and Exchanges Act, 1933 (Act No.  9 of 1933) (the Act) and the Exchange Control Regulations (Regulations) promulgated thereunder in terms of section 9(1) of the Act, on 1961-12-01. In terms of these Regulations, the control over South Africa's foreign currency reserves, including accruals thereto and spending thereof is vested in the Treasury, who is authorised to grant permissions or exemptions for certain transactions, subject to certain conditions. Although these permissions or exemptions which were previously referred to as ‘Rulings' have no statutory force, they have the effect of law. ‘Treasury', is however defined to mean, in relation to any matter contemplated in the Regulations, the Minister of Finance or an officer in the Department of Finance (now the National Treasury) who, by virtue of the division of work in that Department, deals with the matter on the authority of the Minister of Finance. 
+    The Minister of Finance has in terms of Regulation 22E delegated to the Governor, a Deputy Governor, the Head of the Financial Surveillance Department as well as other officials in the Financial Surveillance Department, the powers, functions and duties assigned to and imposed on the Treasury under the Regulations. The Financial Surveillance Department of the South African Reserve Bank (Financial Surveillance Department) is therefore responsible for the day to day administration of exchange controls in South Africa. 
+    Section 9(5)(a) of the Act provides for the issuing of Orders and Rules, the current set of which was also promulgated on 1961-12-01. The Orders and Rules contain various orders, rules, exemptions, forms and procedural arrangements. 
+ 
+Introduction (#Heading)
+    In terms of Regulation 2(2), an Authorised Dealer shall not buy, borrow, receive, sell, lend or deliver any foreign currency or gold except for such purposes or on such conditions as the Treasury, as defined, may determine, subject to the delegation referred to above. 
+    This Currency and Exchanges Manual for Authorised Dealers (Authorised Dealer Manual) contains the permissions and conditions applicable to transactions in foreign exchange that may be undertaken by Authorised Dealers and/or on behalf of their clients in terms of Regulation 2(2), details of related administrative responsibilities as well as the FinSurv Reporting requirements. This Authorised Dealer Manual must be read in conjunction with the Regulations and Authorised Dealers may transact without reference to the Financial Surveillance Department, provided such transactions are permitted in terms of this Authorised Dealer Manual. 
+
+A.1 Definitions (#Heading)
+    #Definition 1
+        In the Currency and Exchanges Manual for Authorised Dealers, unless the context indicates otherwise: 
+        ADLA means an Authorised Dealer in foreign exchange with limited authority, including Bureaux de Change, independent money transfer operators and value transfer service providers, who are authorised by the Financial Surveillance Department to deal in foreign exchange transactions as determined by the Financial Surveillance Department. 
+        ADLA Manual means the Currency and Exchanges Manual issued to ADLAs by the Financial Surveillance Department under the powers delegated by the Minister of Finance. The ADLA Manual contains the permissions, conditions and limits applicable to the transactions in foreign exchange that may be undertaken by ADLAs and/or on behalf of their clients, as well as details of related administrative responsibilities. 
+        Affected person means a body corporate, foundation, trust or partnership operating in South Africa, or an estate, in respect of which: 
+            (i) 75 per cent or more of the capital, assets or earnings thereof may be utilised for payment to, or to the benefit in any manner of, any person who is not resident in South Africa; or 
+            (ii) 75 per cent or more of the voting securities, voting power, power of control, capital, assets or earnings thereof, are directly or indirectly vested in, or controlled by or on behalf of, any person who is not resident in South Africa. 
+    #Definition 1 - end 
+
+A.2 Authorised entities (#Heading)
+    (A) Authorised Dealers (#Heading)
+    The offices in South Africa of the under-mentioned banks in Table 1 are authorised to act, for the purposes of the Regulations, as Authorised Dealers: 
+        #Table 1
+            Name of entity - Authorised Dealer
+            ABSA Bank Limited
+        #Table 1 - end
+
+A.3 Duties and responsibilities of Authorised Dealers (#Heading)
+    (A) Introduction (#Heading)
+        (i) Authorised Dealers should note that when approving requests in terms of the Authorised Dealer Manual, they are in terms of the Regulations, not allowed to grant permission to clients and must refrain from using wording that approval/permission is granted in correspondence with their clients. Instead reference should be made to the specific section of the Authorised Dealer Manual in terms of which the client is permitted to transact. 
+        (ii) In carrying out the important duties entrusted to them, Authorised Dealers should appreciate that uniformity of policy is essential, and that to ensure this it is necessary for the Regulations, Authorised Dealer Manual and circulars to be applied strictly and impartially by all concerned. 
+    (B) Procedures to be followed by Authorised Dealers in administering the Exchange Control Regulations (#Heading)
+        (i) In cases where an Authorised Dealer is uncertain and/or cannot approve the purchase or sale of foreign currency or any other transaction in terms of the authorities set out in the Authorised Dealer Manual, an application should be submitted to the Financial Surveillance Department via the head office of the Authorised Dealer concerned. 
+        (ii) Should an Authorised Dealer have any doubt as to whether or not it may approve an application, such application must likewise be submitted to the Financial Surveillance Department. Authorised Dealers must as a general rule, refrain from their own interpretation of the Authorised Dealer Manual. 
+    (E) Transactions with Common Monetary Area residents (#Heading)
+        (viii) As an exception to (vi) above, Authorised Dealers may: 
+            (a) sell foreign currency to: 
+                (aa) foreign diplomats, accredited foreign diplomatic staff as well as students with a valid student card from other CMA countries while in South Africa; 
+                (bb) CMA residents in South Africa, to cover unforeseen incidental costs whilst in transit, subject to viewing a passenger ticket confirming a destination outside the CMA;  
+        
+  
+B.4 Single discretionary allowance and other miscellaneous payments for private individuals (#Heading)
+    (B) Travel allowances (#Heading)
+        (iv) Eligible parties (#Heading)
+            (f) Common Monetary Area residents (#Heading)
+                (aa) Residents of Lesotho, Namibia and eSwatini do not qualify to be accorded a travel allowance in South Africa except for the following: 
+                    (1) CMA residents who travel overland to and from other CMA countries through a SADC country qualify to be accorded up to an amount not exceeding R25 000 per calendar year. This allocation does not form part of the permissible travel allowance for residents. 
+                    (2) Foreign currency may be sold to foreign diplomats, accredited foreign diplomatic staff as well as students with a valid student card from other CMA member countries while in South Africa. 
+  
+  
+C. Gold (#Heading)
+    (A) Export of gold jewellery by manufacturing jewellers 
+        (i) All applications for permission to export gold jewellery by manufacturing jewellers should be referred to the South African Diamond and Precious Metals Regulator in terms of the Precious Metals Act, 2005 (Act No. 37 of 2005). 
+        (ii) Exporters should be aware that: 
+            (a) the full sale proceeds of all exports must be received in South Africa in foreign currency or Rand from a Non-resident Rand account in the name of the non-resident and/or Rand from a vostro account held in the books of the Authorised Dealer; and 
+            (b) each shipment for export must be supported by the prescribed SARS Customs Declaration. 
+    (B) Other exports of gold
+        (i) All applications for permission to export gold in any form should be referred to the South African Diamond and Precious Metals Regulator. 
+    (C) Acquisition of gold for trade purposes
+        (i) The acquisition of gold for legitimate trade purposes by e.g. manufacturing jewellers, dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. 
+        (ii) After receiving such approval, a permit must be obtained from SARS which will entitle the permit holder to approach Rand Refinery Limited for an allocation of gold. 
+        (iii) The holders of gold, having received the approvals outlined above, are exempt from the provisions of Regulation 5(1). 
+    (D) Advances against gold
+        (i) Payment of an instalment of the purchase price of gold sold to an Authorised Dealer is not regarded as an advance against gold and is permissible. 
+    (E) Krugerrand coins
+        (i) Provided that the purchase consideration has been received in South Africa in foreign currency or Rand from a Non-resident Rand account in the name of the non-resident and/or Rand from a vostro account held in the books of the Authorised Dealer, up to 15 Krugerrand coins or the equivalent in fractional Krugerrand coins may be exported to non-residents supported by the prescribed SARS Customs Declaration. Non-resident visitors may export up to 15 Krugerrand coins or the equivalent in fractional Krugerrand coins, supported by the prescribed SARS Customs Declaration, provided that they can prove that the coins were acquired with the proceeds of foreign currency introduced. 
+        (ii) All applications from e.g. overseas banks, for large quantities of Krugerrand coins should be referred to Rand Refinery Limited. 
+    (F) Marketing of South African gold
+        (i) South African gold producers may elect to sell their total gold output to approved counterparties, once exempted by the Financial Surveillance Department from the provisions of Regulation 5. 
+        (ii) The full export proceeds must be received in South Africa in foreign currency or Rand from a Non-resident Rand account in the name of the non-resident and/or Rand from a vostro account held in the books of the Authorised Dealer. 
+    (G) Applications for the importation of gold
+        (i) All applications for the importation of gold must be referred to the South African Diamond and Precious Metals Regulator. 
+
+

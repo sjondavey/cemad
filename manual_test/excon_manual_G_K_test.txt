@@ -1,0 +1,28 @@
+G. Securities control (#Heading)
+    (A) Control over dealings by residents in securities owned by non-residents or in which such persons have an interest (#Heading)
+        (i) Exchange Control Regulations (#Heading)
+            (a) The regulations governing dealings in securities owned by non-residents are set out in Regulations 14 and 15. 
+            (b) The attention of Authorised Dealers is drawn to the provisions of, inter alia, Regulation 10(1)(c). In this regard, it is essential that all securities related transactions between a resident and a non-resident or emigrant whereby capital or any right to capital is directly or indirectly exported from South Africa, are carefully scrutinised. Documentary evidence such as brokers' notes or validated trade advices and auditors' certificates, where applicable, must be viewed in order to ensure that such transactions are concluded at arm's length and at fair and market related prices. In the case of any doubt on the part of the Authorised Dealer or Authorised Bank concerned, the proposed transaction must be referred to the Financial Surveillance Department. 
+            (c) Residents of Lesotho, Namibia and eSwatini are also regarded as residents for purposes of securities control. 
+        (ii) Glossary of terms
+        #Definition 3
+            (a) For purposes of the application of this section of the Authorised Dealer Manual, unless the context otherwise indicates, the following definitions should be applied: 
+            (aa) Authorised Bank means a person authorised by the Financial Surveillance Department to effect and cancel non-resident endorsements. 
+            (bb) Authorised Dealer means a person authorised by the Treasury to deal in foreign exchange and to effect non-resident endorsements. 
+            (cc) BDA is the Broker Dealer Accounting system operated and controlled by the JSE Limited. 
+            (dd) Certificated Securities are securities issued in paper form. 
+            (ee) Controlled Securities means: 
+                (1) any security that is registered in the name of a non-resident or of which a non-resident is the owner or in which a non-resident has an interest; and 
+                (2) any security acquired from a non-resident or acquired outside the CMA, by any person, irrespective of the residence of such person. 
+            (ff) CSA means Custody and Settlement Agent appointed by a broking member (equities) in terms of Directive FL issued by the JSE Limited, to exercise custody over that member's managed account, safe custody and controlled account assets, and to effect settlement of certificated and uncertificated securities on behalf of that member and its clients. 
+            (gg) CSD means central securities depositories. 
+            (hh) CSDP means a duly appointed participant in a central securities depository. 
+            (ii) CSM means a custody and settlement member of the JSE Limited who has been appointed in terms of the rules and on behalf of its clients and/or another member and that member's clients: 
+                (1) exercises custody over managed accounts, safe custody and controlled account assets; and 
+                (2) effects settlement of uncertificated and certificated securities. 
+            (jj) Settlement authority means the person or persons appointed by the JSE Limited to manage the settlement of transactions in uncertificated securities effected through the trading system of the JSE Limited in terms of the rules and directives, as well as the CSD rules. 
+            (kk) Stockbroker means a natural person who is a member or who is an officer or employee of a member and who is authorised and qualified under the rules of the exchange concerned to be a stockbroker. 
+            (ll) Stock exchange means any association licensed in terms of section 10 of the Securities Services Act, 2004 (Act No. 36 of 2004). 
+            (mm) STRATE means Share Transactions Totally Electronic Limited, a public company registered as a CSD in terms of the section 32 of the Securities Services Act, 2004 (Act No. 36 of 2004), which provides the official electronic settlement and custody services to the JSE Limited. (nn) TMS means the trade monitoring system introduced by the Settlement authority in terms of which members of the JSE Limited, CSM and CSA, who introduce risk into the market, are levied with additional capital calls and cash margins. 
+            (oo) Uncertificated securities mean securities as defined in section 29 of the Securities Services Act, 2004 (Act No. 36 of 2004), which are transferable without a written instrument and are not evidenced by a certificate. 
+        #Definition 3 - end
