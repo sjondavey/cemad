@@ -7,17 +7,17 @@ from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 from cemad_rag.cemad_reference_checker import CEMADReferenceChecker
 
-class CEMAD(Document):
-    def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/ad_manual.csv"):
+class CEMAD_User_Queries(Document):
+    def __init__(self, path_to_manual_as_csv_file = "./inputs/documents/ad_manual_plus.csv"):
         reference_checker = CEMADReferenceChecker()
 
 
         self.document_as_df = load_csv_data(path_to_file = path_to_manual_as_csv_file)
 
-        document_name = "Currency and Exchange Control Manual for Authorised Dealers"
+        document_name = "User queries about the Currency and Exchange Control Manual for Authorised Dealers"
         super().__init__(document_name, reference_checker=reference_checker)
         if not self.check_columns():
-            raise AttributeError(f"The input csv file for the CEMAD class does not have the correct column headings")
+            raise AttributeError(f"The input csv file for the CEMAD User Query class does not have the correct column headings")
 
         self.toc = self.get_toc()
 
@@ -142,7 +142,7 @@ class CEMAD(Document):
         return text
 
     def get_toc(self):
-        toc = StandardTableOfContent(root_node_name = "CEMAD", index_checker = self.reference_checker, regulation_df = self.document_as_df)
+        toc = StandardTableOfContent(root_node_name = "User Queries", index_checker = self.reference_checker, regulation_df = self.document_as_df)
         return toc
 
 

@@ -2,16 +2,16 @@ import streamlit as st
 from regulations_rag.embeddings import get_ada_embedding, get_closest_nodes
 import pandas as pd
 
+if 'chat' not in st.session_state:
+    st.switch_page('question_answering.py')
+
 st.title('Dealer Manual: BOP Codes')
 
-
-with st.sidebar:
-    st.title('💬 BOP codes lookup')
 
 @st.cache_resource(show_spinner=False)
 def load_bop_codes_data():
     with st.spinner(text="Loading the BOP codes - hang tight! This should take a few seconds."):
-        path_to_bop_codes_as_parquet_file = "./inputs/bopcodes.parquet"
+        path_to_bop_codes_as_parquet_file = "./inputs/index/bopcodes.parquet"
         df = pd.read_parquet(path_to_bop_codes_as_parquet_file, engine="pyarrow")
         return df
 
@@ -44,10 +44,10 @@ if prompt := st.chat_input(disabled= ('password_correct' not in st.session_state
 if st.session_state['bop_lookup'][-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            openai_client = st.session_state['excon'].openai_client 
-            model=st.session_state['excon'].embedding_parameters.model
-            dimensions=st.session_state['excon'].embedding_parameters.dimensions
-            threshold = st.session_state['excon'].embedding_parameters.threshold
+            openai_client = st.session_state['chat'].openai_client 
+            model=st.session_state['chat'].embedding_parameters.model
+            dimensions=st.session_state['chat'].embedding_parameters.dimensions
+            threshold = st.session_state['chat'].embedding_parameters.threshold
             question_embedding = get_ada_embedding(openai_client=openai_client, text=prompt, model=model, dimensions=dimensions)
             closest_nodes = get_closest_nodes(st.session_state['bop_codes'], "embedding", question_embedding, threshold = 1.0)
             closest_nodes = closest_nodes.nsmallest(16, 'cosine_distance') 

@@ -1,4 +1,5 @@
 from cemad_rag.documents.cemad import CEMAD
+from cemad_rag.documents.cemad_user_queries import CEMAD_User_Queries
 
 
 from regulations_rag.corpus import Corpus , create_document_dictionary_from_folder

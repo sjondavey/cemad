@@ -9,13 +9,10 @@ import streamlit_antd_components as sac
 from anytree import Node, PreOrderIter
 from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
-from gdpr_rag.documents.gdpr import GDPR
-from gdpr_rag.documents.article_47_bcr import Article_47_BCR
-from gdpr_rag.documents.dpia import DPIA
 
 # If there is page reload, switch to a page where init_session was called.
 if 'chat' not in st.session_state:
-    st.switch_page('question_answering.py')
+    st.switch_page('Question_Answering.py')
 
 def load_class_from_file(filepath):
     spec = importlib.util.spec_from_file_location("module.name", filepath)
@@ -51,12 +48,10 @@ def anytree_to_treeitem(node):
 
 
 def load_tree_data():
-    date_ordered_list_of_documents = ['gdpr.py', 'article_30_5.py', 'article_47_bcr.py', 'decision_making.py', 'dpia.py', 'dpo.py', 'article_49_intl_transfer.py',
-                                    'lead_sa.py', 'data_breach.py', 'data_portability.py', 'transparency.py', 'codes.py', 'online_services.py', 'territorial_scope.py',
-                                    'video.py', 'covid_health.py', 'covid_location.py', 'consent.py', 'forgotten.py', 'protection.py']
+    date_ordered_list_of_documents = ['cemad.py', 'cemad_user_queries.py']
 
 
-    input_folder = './gdpr_rag/documents/'
+    input_folder = './cemad_rag/documents/'
 
     combined_toc = Node("Corpus")
 

@@ -29,7 +29,7 @@ class CEMADCorpusIndex(CorpusIndex):
         corpus = CEMADCorpus("./cemad_rag/documents/")
         index_folder = "./inputs/index/"
         index_df = pd.DataFrame()
-        list_of_index_files = ["ad_index.parquet"]
+        list_of_index_files = ["ad_index.parquet", "ad_index_plus.parquet"]
         # for filename in os.listdir(index_folder):
         for filename in list_of_index_files:
             if filename.endswith(".parquet"):  
