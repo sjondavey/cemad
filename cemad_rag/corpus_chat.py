@@ -494,7 +494,7 @@ class CorpusChat():
             if testing and len(manual_responses_for_testing) > 0:
                 response = manual_responses_for_testing[1]
             else:
-                response = self._get_api_response(messages = despondent_user_messages, testing=testing, manual_responses_for_testing=manual_responses_for_testing, response_index = 1)
+                response = self._get_api_response(messages = despondent_user_messages)
             check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
             if check_result["success"]:
                 return check_result

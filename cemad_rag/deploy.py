@@ -10,7 +10,7 @@ def deploy(base_folder):
     ''' 
     destination = "e:/code/chat/cemad_rag"
 
-    files_to_copy = [base_folder + "/cemad_rag/",
+    items_to_copy = [base_folder + "/cemad_rag/",
                      base_folder + "/.gitignore",
                      base_folder + "/Question_Answering.py",
                      base_folder + "/pages/",

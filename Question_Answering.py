@@ -34,8 +34,8 @@ if 'user_id' not in st.session_state:
     st.session_state['user_id'] = ""
 
 ## Password
-if "password_correct" not in st.session_state.keys():
-    st.session_state["password_correct"] = True
+# if "password_correct" not in st.session_state.keys():
+#     st.session_state["password_correct"] = True
 
 ### Password
 def check_password():

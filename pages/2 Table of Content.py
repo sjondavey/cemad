@@ -12,7 +12,7 @@ from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 # If there is page reload, switch to a page where init_session was called.
 if 'chat' not in st.session_state:
-    st.switch_page('Question_Answering.py')
+    st.switch_page('question_answering.py')
 
 def load_class_from_file(filepath):
     spec = importlib.util.spec_from_file_location("module.name", filepath)
