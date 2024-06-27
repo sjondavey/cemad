@@ -12,7 +12,7 @@ class TestCEMAD:
 
     
     def test_get_text(self):
-        response = self.doc.get_text('A.3(E)(viii)(a)(bb)', add_markdown_decorators = True, add_headings = True, section_only = False)
+        response = self.doc.get_text('A.3(E)(viii)(a)(bb)', add_markdown_decorators = False, add_headings = True, section_only = False)
         expected_response = 'A.3 Duties and responsibilities of Authorised Dealers\n    (E) Transactions with Common Monetary Area residents\n        (viii) As an exception to (vi) above, Authorised Dealers may:\n            (a) sell foreign currency to:\n                (bb) CMA residents in South Africa, to cover unforeseen incidental costs whilst in transit, subject to viewing a passenger ticket confirming a destination outside the CMA;'
         assert response == expected_response
 
