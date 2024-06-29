@@ -9,3 +9,6 @@ class CEMADCorpus(Corpus):
     def __init__(self, folder):
         document_dictionary = create_document_dictionary_from_folder(folder, globals())
         super().__init__(document_dictionary)
+
+    def get_primary_document(self):
+        return "CEMAD"

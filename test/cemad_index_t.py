@@ -2,7 +2,7 @@ import pytest
 import os
 from cemad_rag.cemad_index import CEMADIndex
 from regulations_rag.standard_regulation_index import load_parquet_data, append_parquet_data
-from regulations_rag.regulation_reader import load_csv_data, append_csv_data
+from regulations_rag.file_tools import load_csv_data, append_csv_data
 
 import pandas as pd
 

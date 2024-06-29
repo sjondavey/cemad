@@ -7,20 +7,13 @@ import regex # fuzzy lookup of references in a section of text
 import copy
 from enum import Enum
 
-
-
-# import src.data
-# importlib.reload(src.data)
-from regulations_rag.regulation_index import RegulationIndex, EmbeddingParameters
-
 from regulations_rag.string_tools import match_strings_to_reference_list
 
-from regulations_rag.regulation_reader import RegulationReader
-                           
 from regulations_rag.embeddings import get_ada_embedding, \
                            get_closest_nodes, \
                            num_tokens_from_string,  \
-                           num_tokens_from_messages
+                           num_tokens_from_messages, \
+                           EmbeddingParameters 
 
 from regulations_rag.rerank import RerankAlgos, rerank
 
@@ -82,6 +75,9 @@ class CorpusChat():
 
         self.index = corpus_index
         self.corpus = self.index.corpus
+        self.primary_document = self.corpus.get_primary_document()
+        self.has_primary_document = False
+        self.has_primary_document = self.primary_document != ""
 
         self.rerank_algo = rerank_algo
         self.reset_conversation_history()
@@ -141,7 +137,11 @@ class CorpusChat():
         else:
             sys_instruction = f"Please review your answer. You were asked to assist the user by responding to their question in 1 of {number_of_options} ways but your response does not follow the expected format. Please reformat your response so that it follows the requested format.\n" 
 
-        sample_reference = "B.10(D)(iv)"
+        if self.has_primary_document:
+            sample_reference = self.corpus.get_document(self.primary_document).reference_checker.text_version
+        else:
+            sample_reference = "[Insert Reference Value Here]"
+        
         sys_option_ans  = f"Answer the question. Preface an answer with the tag '{CorpusChat.Prefix.ANSWER.value}'. All referenced extracts must be quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n"
         sys_option_sec  = f"Request additional documentation. If, in the body of the extract(s) provided, there is a reference to another section that is directly relevant and not already provided, respond with the word '{CorpusChat.Prefix.SECTION.value}' followed by 'Extract extract_number, Reference section_reference' - for example SECTION: Extract 1, Reference {sample_reference}.\n"
         sys_option_none = f"State '{CorpusChat.Prefix.NONE.value}' and nothing else in all other cases\n"
@@ -223,24 +223,22 @@ class CorpusChat():
                     document_name = df_sections.iloc[extract_number-len(df_definitions)-1]["document"]
                 doc = self.corpus.get_document(document_name)
                 section_reference = match.group(2)
-                # many cases will get a GDPR reference and that may start with the word 'Article'
-                if section_reference.lower().startswith("article "):
-                    section_reference = section_reference[8:]
 
-                if doc.reference_checker.is_valid(section_reference):
-                    return {"success": True, "path": prefix, "extract": extract_number, "document": document_name, "section": section_reference}
-                # elif document_name != 'GDPR': # most articles will refer to GDPR so it makes sense to check if it is a GDPR reference as well
-                #     gdpr_doc = self.corpus.get_document('GDPR')
-                #     if gdpr_doc.reference_checker.is_valid(section_reference):
-                #         return {"success": True, "path": prefix, "extract": extract_number, "document": 'GDPR', "section": section_reference}
-                
                 document_index = doc.reference_checker.text_version
-                # if document_name != 'GDPR':
-                #     gdpr_doc = self.corpus.get_document('GDPR')
-                #     if document_index == "":
-                #         document_index = gdpr_doc.reference_checker.text_version
-                #     else:
-                #         document_index += ", or " + self.corpus.get_document('GDPR').reference_checker.text_version
+                if doc.reference_checker.is_valid(section_reference):
+                    section_reference = doc.reference_checker.extract_valid_reference(section_reference)
+                    return {"success": True, "path": prefix, "extract": extract_number, "document": document_name, "section": section_reference}
+                elif self.has_primary_document and document_name != self.primary_document: # articles in other documents can refer to the primary document so it makes sense to check if it is a primary document reference as well
+                    primary_doc = self.corpus.get_document(self.primary_document)
+                    if primary_doc.reference_checker.is_valid(section_reference):
+                        section_reference = primary_doc.reference_checker.extract_valid_reference(section_reference)
+                        return {"success": True, "path": prefix, "extract": extract_number, "document": self.primary_document, "section": section_reference}
+
+                    if document_index == "":
+                        document_index = primary_doc.reference_checker.text_version
+                    else:
+                        document_index += ", or " + primary_doc.reference_checker.text_version
+
                 llm_instruction = f'The reference {section_reference} does not appear to be a valid reference for the document. Try using the format {document_index}'
                 return {"success": False, "path": prefix, "llm_followup_instruction": llm_instruction} 
             else:
@@ -345,7 +343,6 @@ class CorpusChat():
 
         return workflow_triggered, relevant_definitions, relevant_sections
 
-    #def _get_api_response(self, messages, testing=False, manual_responses_for_testing=[], response_index=0):
     def _get_api_response(self, messages):
         """
         Fetches a response from the OpenAI API or uses a canned response based on the testing flag.
@@ -356,11 +353,6 @@ class CorpusChat():
         Returns:
         - str: The response from the OpenAI API.
         """
-        # if testing and response_index < len(manual_responses_for_testing):
-        #     # NOTE: In some tests I force the first response but want to test the API call on the second attempt 
-        #     #       so I set testing = True but only pass one message in manual_responses_for_testing 
-        #     response_text = manual_responses_for_testing[response_index]
-        # else:
         model_to_use = self.chat_parameters.model
         total_tokens = num_tokens_from_messages(messages, model_to_use)
         
@@ -472,14 +464,15 @@ class CorpusChat():
             system_message = [{"role": "system", "content": system_content}]
             truncated_chat = self._truncate_message_list(system_message, chat_messages, 2000)
 
-            if testing:
-                return manual_responses_for_testing[0]
+            if testing and len(manual_responses_for_testing) > 0:
+                response = manual_responses_for_testing[0]
             else:
                 response = self._get_api_response(messages = truncated_chat)
-                check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
-                if check_result["success"]:
-                    check_result["question"] = user_question
-                    return check_result
+
+            check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
+            if check_result["success"]:
+                check_result["question"] = user_question
+                return check_result
 
             # The model did not perform as instructed so we not ask it to check its work
             logger.info(f"Initial chat API response did not follow instructions. New instruction: {check_result['llm_followup_instruction']}")
@@ -491,10 +484,11 @@ class CorpusChat():
                                         {"role": "assistant", "content": response},
                                         {"role": "user", "content": check_result["llm_followup_instruction"]}]
 
-            if testing and len(manual_responses_for_testing) > 0:
+            if testing and len(manual_responses_for_testing) > 1:
                 response = manual_responses_for_testing[1]
             else:
                 response = self._get_api_response(messages = despondent_user_messages)
+
             check_result = self._check_response(response, df_definitions=df_definitions, df_sections=df_search_sections)
             if check_result["success"]:
                 return check_result

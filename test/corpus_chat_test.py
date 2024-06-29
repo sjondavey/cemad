@@ -3,9 +3,8 @@ import pandas as pd
 from openai import OpenAI
 from regulations_rag.rerank import RerankAlgos
 
-from regulations_rag.regulation_chat import ChatParameters
-from regulations_rag.regulation_index import  EmbeddingParameters
-from regulations_rag.standard_regulation_index import load_parquet_data
+from regulations_rag.corpus_chat import ChatParameters
+from regulations_rag.embeddings import  EmbeddingParameters
 
 from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
 from cemad_rag.corpus_chat import CorpusChat
@@ -114,11 +113,11 @@ class TestCEMADChat:
         testing = True # don't make call to openai API, use the canned response below        
         workflow_triggered, relevant_definitions, relevant_sections = self.chat.similarity_search(user_content)
         assert relevant_sections.iloc[0]["section_reference"] == "C.(C)" # need to confirm this will be returned in the "user_provides_input" function that uses the results of similarity_search 
-        path = "ANSWER:"
+        flag = "ANSWER:"
         # input_response = 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).  \nReference:  \nC.(C)'
-        input_response = 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).'
-        response = {"success": True, "path": path, "answer": input_response, "reference": [1]}
-        manual_responses_for_testing = [response]
+        input_response = 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1). Reference: 1'
+        #response = {"success": True, "path": path, "answer": input_response, "reference": [1]}
+        manual_responses_for_testing = [flag + input_response]
 
         # Return dictionaries:
         #{"success": False, "path": "SECTION:"/"ANSWER:", "llm_followup_instruction": llm_instruction} 
@@ -139,8 +138,8 @@ class TestCEMADChat:
         user_content = "Who can trade gold?" # there are hits in the KB for this
         testing = True # don't make call to openai API, use the canned response below
         flag = "NONE:"
-        response = {"success": True, "path": "NONE:"}
-        manual_responses_for_testing = [response]
+        #response = {"success": True, "path": "NONE:"}
+        manual_responses_for_testing = [flag + user_content]
         self.chat.user_provides_input(user_content,
                                        testing = testing,
                                        manual_responses_for_testing = manual_responses_for_testing)
@@ -152,34 +151,15 @@ class TestCEMADChat:
         self.chat.system_state = self.chat.State.RAG
         user_content = "Who can trade gold?" # there are hits in the KB for this
         testing = True # don't make call to openai API, use the canned response below
-        response = {"success": True, "path": "SECTION:", "document": 'CEMAD', "section": "A.3(A)(i)", "extract": 1}
-        manual_responses_for_testing = [response]
+        #response = {"success": True, "path": "SECTION:", "document": 'CEMAD', "section": "A.3(A)(i)", "extract": 1}
+        flag = "SECTION:"
+        manual_responses_for_testing = [flag + "Extract 1, Reference C.(C)"]
 
         # now the response once it has received the additional data
         response_text = "The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1)."
-        response2 = {"success": True, "path": "ANSWER:", "answer": response_text, "reference": [1]}
-        manual_responses_for_testing.append(response2)
-
-        self.chat.user_provides_input(user_content,
-                                       testing = testing,
-                                       manual_responses_for_testing = manual_responses_for_testing)
-        assert self.chat.messages[-2]["role"] == "user"
-        assert self.chat.messages[-2]["content"] == 'Question: Who can trade gold?\n\nExtract 1:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(C) Acquisition of gold for trade purposes\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) The acquisition of gold for legitimate trade purposes by e.g. manufacturing jewellers, dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) After receiving such approval, a permit must be obtained from SARS which will entitle the permit holder to approach Rand Refinery Limited for an allocation of gold.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) The holders of gold, having received the approvals outlined above, are exempt from the provisions of Regulation 5(1).\nExtract 2:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(B) Other exports of gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) All applications for permission to export gold in any form should be referred to the South African Diamond and Precious Metals Regulator.\nExtract 3:\nA.3 Duties and responsibilities of Authorised Dealers\n\n&nbsp;&nbsp;&nbsp;&nbsp;(A) Introduction\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) Authorised Dealers should note that when approving requests in terms of the Authorised Dealer Manual, they are in terms of the Regulations, not allowed to grant permission to clients and must refrain from using wording that approval/permission is granted in correspondence with their clients. Instead reference should be made to the specific section of the Authorised Dealer Manual in terms of which the client is permitted to transact.\n'
-
-        assert self.chat.messages[-1]["role"] == "assistant"
-        assert self.chat.messages[-1]["content"].strip() == 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).  \nReference:  \nSection C.(C) from Currency and Exchange Control Manual for Authorised Dealers'
-        assert self.chat.system_state == self.chat.State.RAG
-
-        # Test what happens if it calls for a section that it already has
-        self.chat.reset_conversation_history()
-        testing = True # don't make call to openai API, use the canned response below
-        response = {"success": True, "path": "SECTION:", "document": 'CEMAD', "section": "C.(C)", "extract": 1}
-        manual_responses_for_testing = [response]
-
-
-        response_text = "The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).  \nReference:  \nC.(G): C. Gold."
-        response2 = {"success": True, "path": "ANSWER:", "answer": response_text, "reference": [1]}
-        manual_responses_for_testing.append(response2)
+        #response2 = {"success": True, "path": "ANSWER:", "answer": response_text, "reference": [1]}
+        flag = "ANSWER:"
+        manual_responses_for_testing.append(flag + response_text)
 
         self.chat.user_provides_input(user_content,
                                        testing = testing,
@@ -188,25 +168,45 @@ class TestCEMADChat:
         assert self.chat.messages[-2]["content"] == 'Question: Who can trade gold?\n\nExtract 1:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(C) Acquisition of gold for trade purposes\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) The acquisition of gold for legitimate trade purposes by e.g. manufacturing jewellers, dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) After receiving such approval, a permit must be obtained from SARS which will entitle the permit holder to approach Rand Refinery Limited for an allocation of gold.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) The holders of gold, having received the approvals outlined above, are exempt from the provisions of Regulation 5(1).\nExtract 2:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(B) Other exports of gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) All applications for permission to export gold in any form should be referred to the South African Diamond and Precious Metals Regulator.\n'
 
         assert self.chat.messages[-1]["role"] == "assistant"
-        assert self.chat.messages[-1]["content"].strip() == 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).  \nReference:  \nC.(G): C. Gold.  \nReference:  \nSection C.(C) from Currency and Exchange Control Manual for Authorised Dealers'
+        assert self.chat.messages[-1]["content"].strip() == response_text
+        assert self.chat.system_state == self.chat.State.RAG
+
+        # Test what happens if it calls for a section that it already has
+        self.chat.reset_conversation_history()
+        testing = True # don't make call to openai API, use the canned response below
+        flag = "SECTION:"
+        #response = {"success": True, "path": "SECTION:", "document": 'CEMAD', "section": "C.(C)", "extract": 1}
+        manual_responses_for_testing = [flag + "Extract 1, Reference C.(C)"]
+
+
+        response_text = "The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1). Reference: 1."
+        # response2 = {"success": True, "path": "ANSWER:", "answer": response_text, "reference": [1]}
+        manual_responses_for_testing.append(response_text)
+
+        self.chat.user_provides_input(user_content,
+                                       testing = testing,
+                                       manual_responses_for_testing = manual_responses_for_testing)
+        assert self.chat.messages[-2]["role"] == "user"
+        assert self.chat.messages[-2]["content"] == 'Question: Who can trade gold?\n\nExtract 1:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(C) Acquisition of gold for trade purposes\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) The acquisition of gold for legitimate trade purposes by e.g. manufacturing jewellers, dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ii) After receiving such approval, a permit must be obtained from SARS which will entitle the permit holder to approach Rand Refinery Limited for an allocation of gold.\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(iii) The holders of gold, having received the approvals outlined above, are exempt from the provisions of Regulation 5(1).\nExtract 2:\nC. Gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;(B) Other exports of gold\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i) All applications for permission to export gold in any form should be referred to the South African Diamond and Precious Metals Regulator.\n'
+
+        assert self.chat.messages[-1]["role"] == "assistant"
+        assert self.chat.messages[-1]["content"].strip() == 'The acquisition of gold for legitimate trade purposes, such as by manufacturing jewellers or dentists, is subject to the approval of the South African Diamond and Precious Metals Regulator. After receiving such approval, a permit must be obtained from SARS, which will allow the permit holder to approach Rand Refinery Limited for an allocation of gold. The holders of gold, having received the necessary approvals, are exempt from certain provisions of Regulation 5(1).  \nReference:  \nSection C.(C) from Currency and Exchange Control Manual for Authorised Dealers'
+
         assert self.chat.system_state == self.chat.State.RAG
 
 
         # test what happens if the LLM does not listen to instructions and returns something random
-        # I don't think I can get here in the new approach
-        # self.chat.system_state = self.chat.State.RAG
-        # user_content = "Who can trade gold?" # there are hits in the KB for this
-        # testing = True # don't make call to openai API, use the canned response below
-        # response = {"success": True, "path": "NONE:"}
-        # manual_responses_for_testing = []
-        # manual_responses_for_testing.append(response)
-        # manual_responses_for_testing.append(response) # need to add it twice when checking this branch
-        # self.chat.user_provides_input(user_content, 
-        #                                testing = testing,
-        #                                manual_responses_for_testing = manual_responses_for_testing)
-        # assert self.chat.messages[-1]["role"] == "assistant"
-        # assert self.chat.messages[-1]["content"].strip() == self.chat.Errors.NOT_FOLLOWING_INSTRUCTIONS.value
-        # assert self.chat.system_state == self.chat.State.STUCK
+        self.chat.system_state = self.chat.State.RAG
+        user_content = "Who can trade gold?" # there are hits in the KB for this
+        testing = True # don't make call to openai API, use the canned response below
+        manual_responses_for_testing = ["None of the supplied documentation was relevant"]
+        manual_responses_for_testing.append("None of the supplied documentation was relevant") # need to add it twice when checking this branch
+        self.chat.user_provides_input(user_content, 
+                                       testing = testing,
+                                       manual_responses_for_testing = manual_responses_for_testing)
+        assert self.chat.messages[-1]["role"] == "assistant"
+        assert self.chat.messages[-1]["content"].strip() == self.chat.Errors.NOT_FOLLOWING_INSTRUCTIONS.value
+        assert self.chat.system_state == self.chat.State.STUCK
 
 
     def test__add_rag_data_to_question(self):
@@ -227,7 +227,7 @@ class TestCEMADChat:
         assert output_string == expected_text
 
     def test__create_system_message(self):
-        expected_message = "You are answering questions about South African 'Currency and Exchange Manual for Authorised Dealers' (CEMAD) for an Authorised Dealer (AD) based only on the reference extracts provided. You have 3 options:\n1) Answer the question. Preface an answer with the tag 'ANSWER:'. All referenced extracts must be quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n2) Request additional documentation. If, in the body of the extract(s) provided, there is a reference to another section that is directly relevant and not already provided, respond with the word 'SECTION:' followed by 'Extract extract_number, Reference section_reference' - for example SECTION: Extract 1, Reference B.10(D)(iv).\n3) State 'NONE:' and nothing else in all other cases\n"
+        expected_message = "You are answering questions about South African 'Currency and Exchange Manual for Authorised Dealers' (CEMAD) for an Authorised Dealer (AD) based only on the reference extracts provided. You have 3 options:\n1) Answer the question. Preface an answer with the tag 'ANSWER:'. All referenced extracts must be quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n2) Request additional documentation. If, in the body of the extract(s) provided, there is a reference to another section that is directly relevant and not already provided, respond with the word 'SECTION:' followed by 'Extract extract_number, Reference section_reference' - for example SECTION: Extract 1, Reference [A-Z]\\.\\d{0,2}(?:\\([A-Z]\\))?(?:\\((?:i|ii|iii|iv|v|vi)\\))?(?:\\([a-z]\\))?(?:\\([a-z]{2}\\))?(?:\\(\\d+\\))?.\n3) State 'NONE:' and nothing else in all other cases\n"
         assert self.chat._create_system_message() == expected_message
 
         expected_message = "You are answering questions about South African 'Currency and Exchange Manual for Authorised Dealers' (CEMAD) for an Authorised Dealer (AD) based only on the reference extracts provided. You have 2 options:\n1) Answer the question. Preface an answer with the tag 'ANSWER:'. All referenced extracts must be quoted at the end of the answer, not in the body, by number, in a comma separated list starting after the keyword 'Reference: '. Do not include the word Extract, only provide the number(s).\n2) State 'NONE:' and nothing else in all other cases\n"

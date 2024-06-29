@@ -12,7 +12,7 @@ class CEMADReferenceChecker(ReferenceChecker):
             r'^\([a-z]{2}\)',               # Matches two lowercase letters within parentheses.
             r'^\((?:[1-9]|[1-9][0-9])\)',   # Matches numbers within parentheses, excluding leading zeros.
         ]    
-        text_pattern = r"[A-Z]\.\d{0,2}\([A-Z]\)\((?:i|ii|iii|iv|v|vi)\)\([a-z]\)\([a-z]{2}\)\(\d+\)"
+        text_pattern = r"[A-Z]\.\d{0,2}(?:\([A-Z]\))?(?:\((?:i|ii|iii|iv|v|vi)\))?(?:\([a-z]\))?(?:\([a-z]{2}\))?(?:\(\d+\))?"
 
         super().__init__(regex_list_of_indices = cemad_index_patterns, text_version = text_pattern, exclusion_list=cemad_exclusion_list)
 
