@@ -7,7 +7,7 @@ from regulations_rag.corpus_chat import ChatParameters
 from regulations_rag.embeddings import  EmbeddingParameters
 
 from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
-from cemad_rag.corpus_chat import CorpusChat
+from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
 class TestCEMADChat:
     include_calls_to_api = True
@@ -21,7 +21,7 @@ class TestCEMADChat:
 
     rerank_algo  = RerankAlgos.MOST_COMMON
 
-    chat = CorpusChat(openai_client = openai_client, 
+    chat = CorpusChatCEMAD(openai_client = openai_client, 
                       embedding_parameters = embedding_parameters, 
                       chat_parameters = chat_parameters, 
                       corpus_index = corpus_index,

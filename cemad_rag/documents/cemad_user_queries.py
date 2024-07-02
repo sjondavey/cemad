@@ -142,7 +142,7 @@ class CEMAD_User_Queries(Document):
         return text
 
     def get_toc(self):
-        toc = StandardTableOfContent(root_node_name = "User Queries", index_checker = self.reference_checker, regulation_df = self.document_as_df)
+        toc = StandardTableOfContent(root_node_name = "User Queries", reference_checker = self.reference_checker, regulation_df = self.document_as_df)
         return toc
 
 

@@ -142,7 +142,7 @@ class CEMAD(Document):
         return text
 
     def get_toc(self):
-        toc = StandardTableOfContent(root_node_name = "CEMAD", index_checker = self.reference_checker, regulation_df = self.document_as_df)
+        toc = StandardTableOfContent(root_node_name = "CEMAD", reference_checker = self.reference_checker, regulation_df = self.document_as_df)
         return toc
 
 
