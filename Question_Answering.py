@@ -9,11 +9,11 @@ from openai import OpenAI
 
 from regulations_rag.rerank import RerankAlgos
 
-from regulations_rag.regulation_chat import ChatParameters
-from regulations_rag.regulation_index import  EmbeddingParameters
+from regulations_rag.corpus_chat import ChatParameters
+from regulations_rag.embeddings import  EmbeddingParameters
 
 from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
-from cemad_rag.corpus_chat import CorpusChat
+from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
 
 DEV_LEVEL = 15
@@ -100,7 +100,7 @@ def load_data():
         embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
         chat_parameters = ChatParameters(chat_model = "gpt-4o", temperature = 0, max_tokens = 500)
         
-        chat = CorpusChat(openai_client = st.session_state['openai_client'],
+        chat = CorpusChatCEMAD(openai_client = st.session_state['openai_client'],
                           embedding_parameters = embedding_parameters, 
                           chat_parameters = chat_parameters, 
                           corpus_index = corpus_index,

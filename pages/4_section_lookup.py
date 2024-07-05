@@ -1,5 +1,6 @@
 import streamlit as st
-from cemad_rag.corpus_chat import CorpusChat
+from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
+
 
 if 'chat' not in st.session_state:
     st.switch_page('question_answering.py')
