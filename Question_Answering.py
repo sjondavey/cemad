@@ -6,6 +6,7 @@ import os
 import re
 import bcrypt
 from openai import OpenAI
+import pandas as pd
 
 from regulations_rag.rerank import RerankAlgos
 
@@ -33,52 +34,52 @@ st.set_page_config(page_title="💬 Excon Manual Question Answering", layout="wi
 if 'user_id' not in st.session_state:
     st.session_state['user_id'] = ""
 
-## Password
-# if "password_correct" not in st.session_state.keys():
-#     st.session_state["password_correct"] = True
+# Password
+if "password_correct" not in st.session_state.keys():
+    st.session_state["password_correct"] = True
 
 ### Password
-def check_password():
-    """Returns `True` if the user had a correct password."""
+# def check_password():
+#     """Returns `True` if the user had a correct password."""
 
-    def login_form():
-        """Form with widgets to collect user information"""
-        with st.form("Credentials"):
-            st.text_input("Username", key="username")
-            st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=password_entered)
+#     def login_form():
+#         """Form with widgets to collect user information"""
+#         with st.form("Credentials"):
+#             st.text_input("Username", key="username")
+#             st.text_input("Password", type="password", key="password")
+#             st.form_submit_button("Log in", on_click=password_entered)
 
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        pwd_raw = st.session_state['password']
-        if st.session_state["username"] in st.secrets[
-            "passwords"
-        ] and bcrypt.checkpw(
-            pwd_raw.encode(),
-            st.secrets.passwords[st.session_state["username"]].encode(),
-        ):
-            st.session_state["password_correct"] = True
-            logger.log(ANALYSIS_LEVEL, f"New questions From: {st.session_state['username']}")
-            del st.session_state["password"]  # Don't store the username or password.
-            del pwd_raw
-            st.session_state["user_id"] = st.session_state["username"] 
-            del st.session_state["username"]
+#     def password_entered():
+#         """Checks whether a password entered by the user is correct."""
+#         pwd_raw = st.session_state['password']
+#         if st.session_state["username"] in st.secrets[
+#             "passwords"
+#         ] and bcrypt.checkpw(
+#             pwd_raw.encode(),
+#             st.secrets.passwords[st.session_state["username"]].encode(),
+#         ):
+#             st.session_state["password_correct"] = True
+#             logger.log(ANALYSIS_LEVEL, f"New questions From: {st.session_state['username']}")
+#             del st.session_state["password"]  # Don't store the username or password.
+#             del pwd_raw
+#             st.session_state["user_id"] = st.session_state["username"] 
+#             del st.session_state["username"]
             
-        else:
-            st.session_state["password_correct"] = False
+#         else:
+#             st.session_state["password_correct"] = False
 
-    # Return True if the username + password is validated.
-    if st.session_state.get("password_correct", False):
-        return True
+#     # Return True if the username + password is validated.
+#     if st.session_state.get("password_correct", False):
+#         return True
 
-    # Show inputs for username + password.
-    login_form()
-    if "password_correct" in st.session_state:
-        st.error("😕 User not known or password incorrect")
-    return False
+    # # Show inputs for username + password.
+    # login_form()
+    # if "password_correct" in st.session_state:
+    #     st.error("😕 User not known or password incorrect")
+    # return False
 
-if not check_password():
-    st.stop()
+# if not check_password():
+#     st.stop()
 
 
 
@@ -136,36 +137,40 @@ if "messages" not in st.session_state.keys():
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
 
+
+def display_assistant_response(row):
+    answer = row["content"]
+    references = row.get("section_reference") # This will return the value if the key exists, or None if it doesn't.
+    st.markdown(answer)
+    if references is not None and not references.empty:
+        for index, row in references.iterrows():
+            document_name = row["document_name"]
+            document_key = row["document_key"]
+            section_reference = row["section_reference"]
+            logger.error(section_reference)
+            #text = row["text"]
+            text = st.session_state['chat'].index.corpus.get_text(document_key, section_reference, add_markdown_decorators=True, add_headings=True, section_only=False)
+            reference_string = ""
+            if row["is_definition"]:
+                if section_reference == "":
+                    reference_string += f"The definitions in {document_name}  \n"
+                else:
+                    reference_string += f"Definition {section_reference} from {document_name}  \n"
+            else:
+                if section_reference == "":
+                    reference_string += f"The document {document_name}  \n"
+                else:
+                    reference_string += f"Section {section_reference} from {document_name}  \n"
+            with st.expander(reference_string):
+                st.markdown(text, unsafe_allow_html=True)
+
+
 # Display or clear chat messages
 # https://discuss.streamlit.io/t/chat-message-assistant-component-getting-pushed-into-user-message/57231
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         if message["role"] == "assistant":
-            ############################################################################
-            response = message["content"]
-            # Split the answer into two parts: before "Reference:" and the references part
-            parts = re.split(r'Reference:\s*', response, maxsplit=1)
-            # Extract the text before "Reference:"
-            answer_without_references = parts[0].strip()
-            st.markdown(answer_without_references)
-
-            if response.strip() in st.session_state['chat'].references:
-                all_references = st.session_state['chat'].references[response.strip()]
-
-                # Extract the references part and split into lines
-                if len(parts) > 1:
-                    references = parts[1].strip().split('\n')
-                else:
-                    references = []
-                counter = 0
-                for reference in references:
-                    with st.expander(reference.strip()):
-                        st.markdown(all_references.iloc[counter]['text'])
-                    counter = counter + 1
-
-            ############################################################################
-
-
+            display_assistant_response(message)
         else:
             st.write(message["content"])
 
@@ -187,39 +192,23 @@ if prompt := st.chat_input():
             #placeholder = st.empty()
 
             with st.spinner("Thinking..."):
-                logger.debug(f"Making call to GDPR with prompt: {prompt}")
-                
+                logger.debug(f"Making call with prompt: {prompt}")                            
                 st.session_state['chat'].user_provides_input(prompt)
-
-                ############################################################################
-                response = st.session_state['chat'].messages[-1]["content"]
-                # logger.log(ANALYSIS_LEVEL, f"Response to {st.session_state['user_id']}: {response}")
-
-                # Split the answer into two parts: before "Reference:" and the references part
-                parts = re.split(r'Reference:\s*', response, maxsplit=1)
-                # Extract the text before "Reference:"
-                answer_without_references = parts[0].strip()
-                st.markdown(answer_without_references)
-
-                if response.strip() in st.session_state['chat'].references:
-                    all_references = st.session_state['chat'].references[response.strip()]
-
-                    # Extract the references part and split into lines
-                    if len(parts) > 1:
-                        references = parts[1].strip().split('\n')
-                    else:
-                        references = []
-                    counter = 0
-                    for reference in references:
-                        with st.expander(reference.strip()):
-                            st.markdown(all_references.iloc[counter]['text'])
-                        counter = counter + 1
-
-                ############################################################################
-
-
+                raw_response = st.session_state['chat'].messages_intermediate[-1]
+                llm_reply = raw_response['content']
+                df_definitions = raw_response['definitions']
+                df_search_sections = raw_response['sections']
+                response_dict = st.session_state['chat']._check_response(llm_reply, df_definitions, df_search_sections)
+                row_to_add_to_messages = {}
+                if response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
+                    assistant_response = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
+                    row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame()}
+                else:
+                    llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
+                    row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
+                st.session_state['messages'].append(row_to_add_to_messages)
                 logger.debug(f"Response received")
-                logger.debug(f"Text Returned from GDPR chat: {response}")
-            st.session_state['messages'].append({"role": "assistant", "content": response})
+                logger.debug(f"Text Returned from GDPR chat: {llm_reply}")
+            display_assistant_response(row_to_add_to_messages)
             logger.debug("Response added the the queue")
     
