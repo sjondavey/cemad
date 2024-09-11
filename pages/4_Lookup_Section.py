@@ -3,16 +3,19 @@ from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
 
 if 'chat' not in st.session_state:
-    st.switch_page('question_answering.py')
+    st.switch_page('Ask_Questions.py')
 
 
 st.title('Dealer Manual: Section Lookup')
+st.markdown('The Currency and Exchange Control Manual uses the following format for referencing sections: "A.1(A)(i)(a)(aa)". It begins with an uppercase letter followed by a full stop. After this, a number may follow, though it is not always used (e.g., Section C has no number, and is referenced simply as C.(A) or C.(G)). After the letter or number, all subsequent index values are enclosed in round brackets.')
+st.markdown('You only need to include as many index levels as required.')
+
 
 
 # Store LLM generated responses
 if "messages_lookup" not in st.session_state.keys():
     #excon.reset_conversation_history()
-    st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after? Please use the format A.1(A)(i)(a)(aa)"}]
+    st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after?"}]
 
 for message in st.session_state.messages_lookup:
     with st.chat_message(message["role"]):
@@ -20,7 +23,7 @@ for message in st.session_state.messages_lookup:
 
 def clear_chat_history():
     #excon.reset_conversation_history()
-    st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after? Please use the format A.1(A)(i)(a)(aa)"}]
+    st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after?"}]
 st.sidebar.button('Clear Lookup History', on_click=clear_chat_history)
 
 

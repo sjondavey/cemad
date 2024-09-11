@@ -3,9 +3,12 @@ from regulations_rag.embeddings import get_ada_embedding, get_closest_nodes
 import pandas as pd
 
 if 'chat' not in st.session_state:
-    st.switch_page('question_answering.py')
+    st.switch_page('Ask_Questions.py')
 
 st.title('Dealer Manual: BOP Codes')
+
+st.markdown(f'This is a search page. Type the topic you want to search for in the message bar below, and you will see a list of codes that are similar to the text you entered. You can search using a simple word, like "gold" or "VAT", or by typing a full sentence.')
+st.markdown('Please note: There is no chat functionality on this page—only lookup functionality.')
 
 
 @st.cache_resource(show_spinner=False)

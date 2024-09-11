@@ -1,12 +1,14 @@
+# https://medium.com/@tophamcherie/authenticating-connecting-to-azure-key-vault-or-resources-programmatically-2e1936618789
+# https://learn.microsoft.com/en-us/entra/fundamentals/how-to-create-delete-users
+# https://discuss.streamlit.io/t/get-active-directory-authentification-data/22105/57 / https://github.com/kevintupper/streamlit-auth-demo
 import logging
 
 import streamlit as st
-import openai
 import os
 import re
-import bcrypt
-from openai import OpenAI
-import pandas as pd
+
+
+from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
 
 from regulations_rag.rerank import RerankAlgos
 
@@ -30,88 +32,21 @@ logger.setLevel(ANALYSIS_LEVEL)
 # App title - Must be first Streamlit command
 st.set_page_config(page_title="💬 Excon Manual Question Answering", layout="wide")
 
+if 'service_provider' not in st.session_state:
+    # can only be one of 'azure' or 'streamlit'
+    st.session_state['service_provider'] = 'azure'
+    #st.session_state['service_provider'] = 'streamlit'
+
+    if st.session_state['service_provider'] == 'azure':
+        setup_for_azure()
+    elif st.session_state['service_provider'] == 'streamlit':
+        setup_for_streamlit(True)
+    else:
+        st.markdown("An internal error occurred. The service_provider variable can only be 'azure' or 'streamlit'")
+        st.stop()
 
 if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = ""
-
-# Password
-if "password_correct" not in st.session_state.keys():
-    st.session_state["password_correct"] = True
-
-### Password
-# def check_password():
-#     """Returns `True` if the user had a correct password."""
-
-#     def login_form():
-#         """Form with widgets to collect user information"""
-#         with st.form("Credentials"):
-#             st.text_input("Username", key="username")
-#             st.text_input("Password", type="password", key="password")
-#             st.form_submit_button("Log in", on_click=password_entered)
-
-#     def password_entered():
-#         """Checks whether a password entered by the user is correct."""
-#         pwd_raw = st.session_state['password']
-#         if st.session_state["username"] in st.secrets[
-#             "passwords"
-#         ] and bcrypt.checkpw(
-#             pwd_raw.encode(),
-#             st.secrets.passwords[st.session_state["username"]].encode(),
-#         ):
-#             st.session_state["password_correct"] = True
-#             logger.log(ANALYSIS_LEVEL, f"New questions From: {st.session_state['username']}")
-#             del st.session_state["password"]  # Don't store the username or password.
-#             del pwd_raw
-#             st.session_state["user_id"] = st.session_state["username"] 
-#             del st.session_state["username"]
-            
-#         else:
-#             st.session_state["password_correct"] = False
-
-#     # Return True if the username + password is validated.
-#     if st.session_state.get("password_correct", False):
-#         return True
-
-    # # Show inputs for username + password.
-    # login_form()
-    # if "password_correct" in st.session_state:
-    #     st.error("😕 User not known or password incorrect")
-    # return False
-
-# if not check_password():
-#     st.stop()
-
-
-
-def load_data():
-    logger.log(ANALYSIS_LEVEL, f"*** Loading data for {st.session_state['user_id']}. Should only happen once")
-    logger.debug(f'--> cache_resource called again to reload data')
-    with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
-
-        key = st.secrets["index"]["decryption_key"]
-        corpus_index = CEMADCorpusIndex(key)
-
-        rerank_algo = RerankAlgos.LLM
-        rerank_algo.params["openai_client"] = st.session_state['openai_client']
-        rerank_algo.params["model_to_use"] = st.session_state['selected_model']
-        rerank_algo.params["user_type"] = corpus_index.user_type
-        rerank_algo.params["corpus_description"] = corpus_index.corpus_description
-        rerank_algo.params["final_token_cap"] = 5000 # can go large with the new models
-
-        embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
-        chat_parameters = ChatParameters(chat_model = "gpt-4o", temperature = 0, max_tokens = 500)
-        
-        chat = CorpusChatCEMAD(openai_client = st.session_state['openai_client'],
-                          embedding_parameters = embedding_parameters, 
-                          chat_parameters = chat_parameters, 
-                          corpus_index = corpus_index,
-                          rerank_algo = rerank_algo,   
-                          user_name_for_logging=st.session_state["user_id"])
-
-        return chat
-
-if 'openai_api' not in st.session_state:
-    st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])
+    st.session_state['user_id'] = "TODO: Get Name"
 
 
 if 'selected_model' not in st.session_state.keys():
@@ -122,12 +57,24 @@ if 'selected_model' not in st.session_state.keys():
 
 
 if 'chat' not in st.session_state:
-    st.session_state['chat'] = load_data()
+    st.session_state['chat'] = load_data(st.session_state['service_provider'])
     st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
+
+# used if I need hyperlinks from text: https://discuss.streamlit.io/t/hyperlink-to-another-streamlit-page-inside-a-text/65463/8
+if 'page_names' not in st.session_state: 
+    st.session_state['page_table_of_content'] = 'Table_of_Content'
+    st.session_state['page_bop_lookup'] = 'BOP_Code_Lookup'
+    st.session_state['page_lookup_section'] = 'Lookup_Section'
+    st.session_state['page_read_the_documents'] = 'Read_the_Documents'
+
 
 st.title('CEMAD: Question Answering')
 
-st.write(f"I am a bot designed to answer questions based on {st.session_state['chat'].index.corpus_description}. How can I assist today?")
+st.markdown(f'I am a bot designed to answer questions based on {st.session_state["chat"].index.corpus_description}.')
+st.markdown('**I can only answer questions if I can find a reference in my source documents**, which you can view on the "Table of Contents" page. If you receive a response indicating an inability to find relevant documentation, please refer to the "Read the Documents" page.')
+st.markdown(f'Looking for inspiration? The Reserve Bank has a list of <a href="https://www.resbank.co.za/en/home/what-we-do/financial-surveillance/FinSurvFAQ" target="_blank">Frequently Asked Questions</a>. Try asking one of those here!', unsafe_allow_html=True)
+st.markdown('**I work best if you press the "Clear Chat History" button when you want to ask a question about a new topic**')
+
 temperature = 0.0
 max_length = 1000 
         
@@ -136,7 +83,6 @@ if "messages" not in st.session_state.keys():
     logger.debug("Adding \'messages\' to keys")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
-
 
 def display_assistant_response(row):
     answer = row["content"]
@@ -170,7 +116,7 @@ def display_assistant_response(row):
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         if message["role"] == "assistant":
-            display_assistant_response(message)
+             display_assistant_response(message)
         else:
             st.write(message["content"])
 
@@ -189,7 +135,6 @@ if prompt := st.chat_input():
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            #placeholder = st.empty()
 
             with st.spinner("Thinking..."):
                 logger.debug(f"Making call with prompt: {prompt}")                            
