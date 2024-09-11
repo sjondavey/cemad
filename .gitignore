@@ -11,5 +11,6 @@ __pycache__/
 /tmp
 
 /pdf
+/env
 
 .env
