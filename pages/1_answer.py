@@ -56,8 +56,6 @@ def display_assistant_response(row):
             document_name = row["document_name"]
             document_key = row["document_key"]
             section_reference = row["section_reference"]
-            logger.error(section_reference)
-            #text = row["text"]
             text = st.session_state['chat'].index.corpus.get_text(document_key, section_reference, add_markdown_decorators=True, add_headings=True, section_only=False)
             reference_string = ""
             if row["is_definition"]:
