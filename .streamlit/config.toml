@@ -1,0 +1,5 @@
+[metadata]
+name = "Exchange control question answering service"
+shortName = "Excon Answers"
+description = "Using Retrival Augmented Generation to answer questions about South African Exchange Control"
+icon = "../publication_icon.jpg"

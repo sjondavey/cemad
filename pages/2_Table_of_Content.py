@@ -11,18 +11,18 @@ from regulations_rag.regulation_table_of_content import StandardTableOfContent
 
 
 # If there is page reload, switch to a page where init_session was called.
-if 'chat' not in st.session_state:
-    st.switch_page('Ask_Questions.py')
 
 st.title('Table of Content')
 
-st.markdown(f'In addition to the manual (under the CEMAD heading), you will also notice a document titled "User Queries". If the bot is not answering questions that it should because it cannot find specific reference material, they will be added to the document "User Queries". The index will follow a similar structure to the one in CEMAD, but with sections like "Z.1" that are not part of CEMAD itself, to avoid confusion.')
-st.markdown('#### **A few quirks to note when navigating this page:**\n\n\
-- Click a node to expand it.\n\
-- Initially, when you click the triangle to the left of the word "Corpus", the arrow may rotate as if it\'s expanding, but nothing happens. Try selecting the word "Corpus" (it should change to red) and then press the triangle to expand the list. \n\
-- You may need to try a few combinations. The page generally functions as expected after the first level of the tree has been expanded.')
-st.markdown('**Note:** I have not included all the tables at this stage.')
+st.markdown('**A few quirks to note when navigating this page:**\n\
+- Click on the triangle to the left of the word "Corpus" below to expand the source documents.\n\
+- If the triangle rotates (as if it\'s expanding) but nothing happens, try selecting the word "Corpus" (it should change to red) and then press the triangle again to expand the list. \n\
+- The Table of Content generally functions as expected after the first level of the tree has been expanded.')
 st.markdown("---")
+
+with st.sidebar:
+    st.markdown(f'The "User Queries" document provides additional or clarifying information. Is uses an index similar to that of the manual, but with sections like "Z.1" that are not part of CEMAD itself, to avoid confusion.')
+    st.markdown('**Note:** I have not included all the tables at this stage.')
 
 def load_class_from_file(filepath):
     spec = importlib.util.spec_from_file_location("module.name", filepath)

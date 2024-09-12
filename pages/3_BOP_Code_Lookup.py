@@ -2,13 +2,9 @@ import streamlit as st
 from regulations_rag.embeddings import get_ada_embedding, get_closest_nodes
 import pandas as pd
 
-if 'chat' not in st.session_state:
-    st.switch_page('Ask_Questions.py')
 
-st.title('Dealer Manual: BOP Codes')
+st.title('Search BOP Codes')
 
-st.markdown(f'This is a search page. Type the topic you want to search for in the message bar below, and you will see a list of codes that are similar to the text you entered. You can search using a simple word, like "gold" or "VAT", or by typing a full sentence.')
-st.markdown('Please note: There is no chat functionality on this page—only lookup functionality.')
 
 
 @st.cache_resource(show_spinner=False)
@@ -34,7 +30,11 @@ for message in st.session_state['bop_lookup']:
 def clear_chat_history():
     #excon.reset_conversation_history()
     st.session_state['bop_lookup'] = [{"role": "assistant", "content": "Which code are you looking for?"}]
-st.sidebar.button('Clear Lookup History', on_click=clear_chat_history)
+
+with st.sidebar:
+    st.button('Clear Lookup History', on_click=clear_chat_history)
+    st.markdown(f'Type the topic you want to search for in the message bar below, and you will see a list of codes that are similar to the text you entered. You can search using a simple word, like "gold" or "VAT", or by typing a full sentence.')
+    st.markdown('Please note: There is no chat functionality on this page—only lookup functionality.')
 
 
 # User-provided prompt

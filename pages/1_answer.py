@@ -6,9 +6,12 @@ import logging
 import streamlit as st
 import os
 import re
-
+import pandas as pd
+import sys
 
 from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
+from footer import footer
+
 
 from regulations_rag.rerank import RerankAlgos
 
@@ -28,52 +31,12 @@ logging.basicConfig(level=ANALYSIS_LEVEL)
 logger = logging.getLogger(__name__)
 logger.setLevel(ANALYSIS_LEVEL)
 
-
 # App title - Must be first Streamlit command
-st.set_page_config(page_title="💬 Excon Manual Question Answering", layout="wide")
-
-if 'service_provider' not in st.session_state:
-    # can only be one of 'azure' or 'streamlit'
-    st.session_state['service_provider'] = 'azure'
-    #st.session_state['service_provider'] = 'streamlit'
-
-    if st.session_state['service_provider'] == 'azure':
-        setup_for_azure()
-    elif st.session_state['service_provider'] == 'streamlit':
-        setup_for_streamlit(True)
-    else:
-        st.markdown("An internal error occurred. The service_provider variable can only be 'azure' or 'streamlit'")
-        st.stop()
-
-if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = "TODO: Get Name"
+#
 
 
-if 'selected_model' not in st.session_state.keys():
-    #st.session_state['model_options'] = ['gpt-4-0125-preview', 'gpt-4', 'gpt-3.5-turbo']
-    st.session_state['model_options'] = ['gpt-4o']
-    st.session_state['selected_model'] = 'gpt-4o'
-    st.session_state['selected_model_previous'] = 'gpt-4o'
-
-
-if 'chat' not in st.session_state:
-    st.session_state['chat'] = load_data(st.session_state['service_provider'])
-    st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
-
-# used if I need hyperlinks from text: https://discuss.streamlit.io/t/hyperlink-to-another-streamlit-page-inside-a-text/65463/8
-if 'page_names' not in st.session_state: 
-    st.session_state['page_table_of_content'] = 'Table_of_Content'
-    st.session_state['page_bop_lookup'] = 'BOP_Code_Lookup'
-    st.session_state['page_lookup_section'] = 'Lookup_Section'
-    st.session_state['page_read_the_documents'] = 'Read_the_Documents'
-
-
-st.title('CEMAD: Question Answering')
-
-st.markdown(f'I am a bot designed to answer questions based on {st.session_state["chat"].index.corpus_description}.')
-st.markdown('**I can only answer questions if I can find a reference in my source documents**, which you can view on the "Table of Contents" page. If you receive a response indicating an inability to find relevant documentation, please refer to the "Read the Documents" page.')
-st.markdown(f'Looking for inspiration? The Reserve Bank has a list of <a href="https://www.resbank.co.za/en/home/what-we-do/financial-surveillance/FinSurvFAQ" target="_blank">Frequently Asked Questions</a>. Try asking one of those here!', unsafe_allow_html=True)
-st.markdown('**I work best if you press the "Clear Chat History" button when you want to ask a question about a new topic**')
+st.title('Ask me a question about South African Exchange Control')
+st.markdown(f'A bot that answers questions based on the {st.session_state["chat"].index.corpus_description}. This bot is **not** endorsed by anyone official.')
 
 temperature = 0.0
 max_length = 1000 
@@ -124,7 +87,12 @@ def clear_chat_history():
     logger.debug("Clearing \'messages\'")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
+
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
+with st.sidebar:
+    st.markdown('Answers *only* if references can be found.')
+    st.markdown('**Press the "Clear Chat History" button before you change topic**')
+    st.markdown(f'Looking for inspiration? The Reserve Bank has a list of <a href="https://www.resbank.co.za/en/home/what-we-do/financial-surveillance/FinSurvFAQ" target="_blank">Frequently Asked Questions</a>. Try asking one of those here.', unsafe_allow_html=True)
 
 
 # User-provided prompt
@@ -157,3 +125,4 @@ if prompt := st.chat_input():
             display_assistant_response(row_to_add_to_messages)
             logger.debug("Response added the the queue")
     
+footer()
