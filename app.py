@@ -8,6 +8,7 @@ import os
 import re
 import pandas as pd
 import sys
+from datetime import datetime
 
 from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
 from footer import footer
@@ -54,9 +55,14 @@ if 'service_provider' not in st.session_state:
         # Parameter True means to include the username and password
         setup_for_streamlit(True)
 
+    os.makedirs(st.session_state['output_folder'], exist_ok=True)
 
 if 'user_id' not in st.session_state:
     st.session_state['user_id'] = "TODO: Get Name"
+    now = datetime.now()
+    date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
+    filename = date_time_str + "_user_id.log"
+    st.session_state['output_file'] = os.path.join(st.session_state['output_folder'], filename)
 
 
 if 'selected_model' not in st.session_state.keys():
@@ -71,11 +77,11 @@ if 'chat' not in st.session_state:
     st.session_state['chat'].chat_parameters.model = st.session_state['selected_model']
 
 # list of icons here: https://fonts.google.com/icons
-ask_question_page = st.Page("pages/1_answer.py", title="Ask a question", default=True, icon=":material/forum:")
-toc_question_page = st.Page("pages/2_Table_of_Content.py", title="Table of content", icon=":material/list:")
-bop_page = st.Page("pages/3_BOP_Code_Lookup.py", title="BOP Codes", icon=":material/search:")
-section_lookup_page = st.Page("pages/4_Lookup_Section.py", title="Section Lookup", icon=":material/filter_alt:")
-documentation_page = st.Page("pages/5_Read_the_Documents.py", title="Read the documents", icon=":material/article:")
+ask_question_page = st.Page("streamlit_pages/1_answer.py", title="Ask a question", default=True, icon=":material/forum:")
+toc_question_page = st.Page("streamlit_pages/2_Table_of_Content.py", title="Table of content", icon=":material/list:")
+bop_page = st.Page("streamlit_pages/3_BOP_Code_Lookup.py", title="BOP Codes", icon=":material/search:")
+section_lookup_page = st.Page("streamlit_pages/4_Lookup_Section.py", title="Section Lookup", icon=":material/filter_alt:")
+documentation_page = st.Page("streamlit_pages/5_Read_the_Documents.py", title="Read the documents", icon=":material/article:")
 pg = st.navigation({"Other things to do": [ask_question_page, toc_question_page, bop_page, section_lookup_page, documentation_page]})
 pg.run()
 

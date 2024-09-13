@@ -25,7 +25,6 @@ ANALYSIS_LEVEL = 25
 logging.addLevelName(DEV_LEVEL, 'DEV')       
 logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
 
-logging.basicConfig(level=ANALYSIS_LEVEL)
 logger = logging.getLogger(__name__)
 logger.setLevel(ANALYSIS_LEVEL)
 
@@ -40,6 +39,9 @@ def setup_for_azure():
             # Load local .env file
             load_dotenv()
             st.session_state['app_path'] = "http://localhost:8501"
+            folder_to_write_to = "./user_data"
+        else: # folder in Azure
+            folder_to_write_to = os.path.expanduser('~/user_data')
 
         # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
         # When the app is running in Azure, DefaultAzureCredential automatically detects if a managed identity exists for the App Service and, if so, uses it to access other Azure resources
@@ -52,6 +54,11 @@ def setup_for_azure():
         api_key = secret_client.get_secret(secret_name)
         st.session_state['openai_client'] = OpenAI(api_key = api_key.value)
 
+    if 'output_folder' not in st.session_state:
+        # Ensure the directory exists
+        # folder_to_write_to = "./user_data/"
+        # os.makedirs(folder_to_write_to, exist_ok=True)
+        st.session_state['output_folder'] = folder_to_write_to
 
 def setup_for_streamlit(insist_on_password = False):
     # test to see if we are running locally or on the streamlit cloud
@@ -61,6 +68,9 @@ def setup_for_streamlit(insist_on_password = False):
             st.session_state['app_path'] = "http://localhost:8501"
         else: # we are on the cloud
             st.session_state['app_path'] = "https://exconmanualchat.streamlit.app/"
+
+    if 'output_folder' not in st.session_state:
+        st.session_state['output_folder'] = "./user_data/"
 
     if 'openai_api' not in st.session_state:
         st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])

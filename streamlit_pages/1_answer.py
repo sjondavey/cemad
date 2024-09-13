@@ -21,15 +21,18 @@ from regulations_rag.embeddings import  EmbeddingParameters
 from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
 from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
-
+logger = logging.getLogger(__name__)
 DEV_LEVEL = 15
 ANALYSIS_LEVEL = 25
-logging.addLevelName(DEV_LEVEL, 'DEV')       
-logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
 
-logging.basicConfig(level=ANALYSIS_LEVEL)
-logger = logging.getLogger(__name__)
-logger.setLevel(ANALYSIS_LEVEL)
+# I need this so I only add one file_logger per session
+if 'file_logger_set' not in st.session_state.keys():    
+    logging.addLevelName(DEV_LEVEL, 'DEV')       
+    logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
+    file_handler = logging.FileHandler(st.session_state['output_file'])
+    file_handler.setLevel(ANALYSIS_LEVEL)
+    logger.addHandler(file_handler)
+    st.session_state['file_logger_set'] = "set"
 
 # App title - Must be first Streamlit command
 #
@@ -44,6 +47,7 @@ max_length = 1000
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
     logger.debug("Adding \'messages\' to keys")
+    #file_handler.error("Something only the filehander should see")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
 
@@ -94,10 +98,11 @@ with st.sidebar:
 
 
 # User-provided prompt
-if prompt := st.chat_input():
-    logger.debug(f"st.chat_input() called. Value returned is: {prompt}")        
+if prompt := st.chat_input(placeholder="Ask your Exchange Control related question here"):
     if prompt is not None and prompt != "":
         st.session_state['messages'].append({"role": "user", "content": prompt})
+        logger.log(ANALYSIS_LEVEL, f"role: user, content: {prompt}")        
+        
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
@@ -118,8 +123,8 @@ if prompt := st.chat_input():
                     llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
                     row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
                 st.session_state['messages'].append(row_to_add_to_messages)
-                logger.debug(f"Response received")
-                logger.debug(f"Text Returned from GDPR chat: {llm_reply}")
+                logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {llm_answer}")        
+
             display_assistant_response(row_to_add_to_messages)
             logger.debug("Response added the the queue")
     
