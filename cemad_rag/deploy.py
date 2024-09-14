@@ -16,7 +16,7 @@ def deploy(base_folder):
                      base_folder + "/footer.py",
                      base_folder + "/publication_icon.jpg",
                      base_folder + "/streamlit_common.py",
-                     base_folder + "/pages/",
+                     base_folder + "/streamlit_pages/",
                      base_folder + "/.streamlit/secrets.toml",
                      base_folder + "/.streamlit/config.toml",
                      base_folder + "/inputs/",

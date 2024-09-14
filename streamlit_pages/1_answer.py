@@ -119,11 +119,12 @@ if prompt := st.chat_input(placeholder="Ask your Exchange Control related questi
                 if response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
                     assistant_response = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
                     row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame()}
+                    logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {assistant_response}")        
                 else:
                     llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
                     row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
+                    logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {llm_answer}")        
                 st.session_state['messages'].append(row_to_add_to_messages)
-                logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {llm_answer}")        
 
             display_assistant_response(row_to_add_to_messages)
             logger.debug("Response added the the queue")

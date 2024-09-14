@@ -5,15 +5,12 @@ from openai import OpenAI
 import platform
 import bcrypt
 
-
 import streamlit as st
 
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 from regulations_rag.rerank import RerankAlgos
-
-
 from regulations_rag.corpus_chat import ChatParameters
 from regulations_rag.embeddings import  EmbeddingParameters
 
