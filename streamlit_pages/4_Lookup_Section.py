@@ -1,16 +1,15 @@
+import json
 import streamlit as st
 from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
-
+from streamlit_common import write_data_to_output
 
 
 st.title('Dealer Manual: Section Lookup')
 
 
-
 # Store LLM generated responses
 if "messages_lookup" not in st.session_state.keys():
-    #excon.reset_conversation_history()
     st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after?"}]
 
 for message in st.session_state.messages_lookup:
@@ -18,8 +17,8 @@ for message in st.session_state.messages_lookup:
         st.write(message["content"])
 
 def clear_chat_history():
-    #excon.reset_conversation_history()
     st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after?"}]
+    write_data_to_output('{"role": "action_section_lookup", "content": "Clear history"}')
 
 
 with st.sidebar:
@@ -28,12 +27,14 @@ with st.sidebar:
     st.markdown('You only need to include as many index levels as required.')
 
 
-
 # User-provided prompt
 if prompt := st.chat_input(disabled= ('password_correct' not in st.session_state or not st.session_state["password_correct"])): 
     st.session_state.messages_lookup.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
+        log_entry = {"role": "user_section_lookup", "content": prompt}
+        write_data_to_output(json.dumps(log_entry))
+
 
 # Generate a new response if last message is not from assistant
 if st.session_state.messages_lookup[-1]["role"] != "assistant":
@@ -46,11 +47,6 @@ if st.session_state.messages_lookup[-1]["role"] != "assistant":
             else:
                 response = st.session_state['chat'].corpus.get_text("CEMAD", prompt)
                 formatted_response = response
-                # formatted_response = ''
-                # lines = response.split('\n')
-                # for line in lines:
-                #     spaces = len(line) - len(line.lstrip())
-                #     formatted_response += '- ' + '&nbsp;' * spaces + line.lstrip() + "  \n"
             placeholder.markdown(formatted_response)
     st.session_state.messages_lookup.append({"role": "assistant", "content": formatted_response})
 

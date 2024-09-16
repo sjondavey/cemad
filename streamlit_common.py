@@ -27,6 +27,9 @@ logger.setLevel(ANALYSIS_LEVEL)
 
 
 def setup_for_azure():
+    if 'service_provider' not in st.session_state:
+        st.session_state['service_provider'] = 'azure'
+
     if 'key_vault' not in st.session_state:
         st.session_state['app_path'] = "https://cemadrag-c8cve3anewdpcdhf.southafricanorth-01.azurewebsites.net"
         # Determine if the app is running locally or on Azure. When run locally, DefaultAzureCredential will default to 
@@ -57,7 +60,13 @@ def setup_for_azure():
         # os.makedirs(folder_to_write_to, exist_ok=True)
         st.session_state['output_folder'] = folder_to_write_to
 
+    if not "password_correct" in st.session_state: # No passwords yet in Azure but passwords required for other pages
+        st.session_state["password_correct"] = True
+
 def setup_for_streamlit(insist_on_password = False):
+    if 'service_provider' not in st.session_state:
+        st.session_state['service_provider'] = 'streamlit'
+
     # test to see if we are running locally or on the streamlit cloud
     if 'app_path' not in st.session_state:
         test_variable = platform.processor()
@@ -154,3 +163,6 @@ def load_data(service_provider):
         return chat
 
 
+def write_data_to_output(text):
+    if st.session_state['service_provider'] == 'azure':
+        st.session_state['output_file'].append_block(text + "\n")

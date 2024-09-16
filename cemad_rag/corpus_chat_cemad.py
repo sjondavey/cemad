@@ -91,10 +91,10 @@ class CorpusChatCEMAD(CorpusChat):
             alternative_questions_with_search_results = result["alternatives"]
 
             if len(alternative_questions_with_search_results) == 1:
-                assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however is a different phrasing of the question which should find some reference material in the {self.index.corpus_description}" 
+                assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however is a different phrasing of the question which should find some reference material in the {self.index.corpus_description}. Perhaps try:\n\n" 
                 assistant_content = assistant_content + "\n" + alternative_questions_with_search_results[0]
             else: 
-                assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however are different phrasings of the question which should find some reference material in the {self.index.corpus_description}" 
+                assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however are different phrasings of the question which should find some reference material in the {self.index.corpus_description}: Perhaps try\n\n" 
                 counter = 1
                 for question in alternative_questions_with_search_results:
                     assistant_content = assistant_content + "\n" + str(counter) + ") " + question

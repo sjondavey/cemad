@@ -13,6 +13,9 @@ from datetime import datetime
 from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
 from footer import footer
 
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobServiceClient
+
 
 from regulations_rag.rerank import RerankAlgos
 
@@ -43,6 +46,14 @@ logger.setLevel(ANALYSIS_LEVEL)
 
 st.set_page_config(page_title="Excon Answers", page_icon="./publication_icon.jpg", layout="wide")
 
+# Start with username because we need it to create the log file
+if 'user_id' not in st.session_state:
+    st.session_state['user_id'] = "TODO: Get Name"
+    now = datetime.now()
+    date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
+    filename = date_time_str + "_user_id.log"
+
+
 if 'service_provider' not in st.session_state:
     # can only be one of 'azure' or 'streamlit'
     if len(sys.argv) > 1 and sys.argv[1] == "azure":
@@ -55,14 +66,20 @@ if 'service_provider' not in st.session_state:
         # Parameter True means to include the username and password
         setup_for_streamlit(True)
 
-    os.makedirs(st.session_state['output_folder'], exist_ok=True)
+    account_url = "https://chatlogsaccount.blob.core.windows.net/"
+    default_credential = DefaultAzureCredential()
+    blob_service_client = BlobServiceClient(account_url, credential=default_credential)
+    container_name = "cemadtest01"
+    #https://stackoverflow.com/questions/76054022/how-to-add-logs-to-a-file-blob-in-an-azure-container-with-basicconfig
+    # os.makedirs(st.session_state['output_folder'], exist_ok=True)
+    st.session_state['output_file'] = blob_service_client.get_blob_client(container=container_name, blob=filename)
+    # Check if blob exists, if not create an append blob
+    try:
+        st.session_state['output_file'].get_blob_properties()  # Check if blob exists
+    except:
+        # Create an empty append blob if it doesn't exist
+        st.session_state['output_file'].create_append_blob()
 
-if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = "TODO: Get Name"
-    now = datetime.now()
-    date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
-    filename = date_time_str + "_user_id.log"
-    st.session_state['output_file'] = os.path.join(st.session_state['output_folder'], filename)
 
 
 if 'selected_model' not in st.session_state.keys():

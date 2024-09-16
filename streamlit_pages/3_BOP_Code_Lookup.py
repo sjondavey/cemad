@@ -1,10 +1,10 @@
 import streamlit as st
 from regulations_rag.embeddings import get_ada_embedding, get_closest_nodes
 import pandas as pd
-
+import json
+from streamlit_common import write_data_to_output
 
 st.title('Search BOP Codes')
-
 
 
 @st.cache_resource(show_spinner=False)
@@ -28,8 +28,8 @@ for message in st.session_state['bop_lookup']:
 
 
 def clear_chat_history():
-    #excon.reset_conversation_history()
     st.session_state['bop_lookup'] = [{"role": "assistant", "content": "Which code are you looking for?"}]
+    write_data_to_output('{"role": "action_bop_lookup", "content": "Clear history"}')
 
 with st.sidebar:
     st.button('Clear Lookup History', on_click=clear_chat_history)
@@ -41,7 +41,10 @@ with st.sidebar:
 if prompt := st.chat_input(disabled= ('password_correct' not in st.session_state or not st.session_state["password_correct"])): 
     st.session_state['bop_lookup'].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.write(prompt)
+        st.write(prompt)        
+        log_entry = {"role": "user_bop_lookup", "content": prompt}
+        write_data_to_output(json.dumps(log_entry))
+
 
 # Generate a new response if last message is not from assistant
 if st.session_state['bop_lookup'][-1]["role"] != "assistant":
@@ -59,6 +62,7 @@ if st.session_state['bop_lookup'][-1]["role"] != "assistant":
     df = closest_nodes[relevant_columns]
     st_df = st.dataframe(closest_nodes[relevant_columns], hide_index = True)
     st.session_state['bop_lookup'].append({"role": "assistant", "content": df})
+
 
 
 

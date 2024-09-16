@@ -8,8 +8,9 @@ import os
 import re
 import pandas as pd
 import sys
+import json
 
-from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
+from streamlit_common import setup_for_azure, setup_for_streamlit, load_data, write_data_to_output
 from footer import footer
 
 
@@ -22,21 +23,6 @@ from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
 from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
 logger = logging.getLogger(__name__)
-DEV_LEVEL = 15
-ANALYSIS_LEVEL = 25
-
-# I need this so I only add one file_logger per session
-if 'file_logger_set' not in st.session_state.keys():    
-    logging.addLevelName(DEV_LEVEL, 'DEV')       
-    logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
-    file_handler = logging.FileHandler(st.session_state['output_file'])
-    file_handler.setLevel(ANALYSIS_LEVEL)
-    logger.addHandler(file_handler)
-    st.session_state['file_logger_set'] = "set"
-
-# App title - Must be first Streamlit command
-#
-
 
 st.title('Ask me a question about South African Exchange Control')
 st.markdown(f'A bot that answers questions based on the {st.session_state["chat"].index.corpus_description}. This bot is **not** endorsed by anyone official.')
@@ -86,9 +72,10 @@ for message in st.session_state.messages:
             st.write(message["content"])
 
 def clear_chat_history():
-    logger.debug("Clearing \'messages\'")
+    # logger.debug("Clearing \'messages\'")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
+    write_data_to_output('{"role": "action", "content": "Clear history"}')
 
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 with st.sidebar:
@@ -100,12 +87,14 @@ with st.sidebar:
 # User-provided prompt
 if prompt := st.chat_input(placeholder="Ask your Exchange Control related question here"):
     if prompt is not None and prompt != "":
-        st.session_state['messages'].append({"role": "user", "content": prompt})
-        logger.log(ANALYSIS_LEVEL, f"role: user, content: {prompt}")        
-        
+        log_entry = {"role": "user", "content": prompt}
+        st.session_state['messages'].append(log_entry)
+        write_data_to_output(json.dumps(log_entry))
+
         with st.chat_message("user"):
             st.markdown(prompt)
         with st.chat_message("assistant"):
+            llm_response_formatted_for_logs = ""
 
             with st.spinner("Thinking..."):
                 logger.debug(f"Making call with prompt: {prompt}")                            
@@ -116,17 +105,19 @@ if prompt := st.chat_input(placeholder="Ask your Exchange Control related questi
                 df_search_sections = raw_response['sections']
                 response_dict = st.session_state['chat']._check_response(llm_reply, df_definitions, df_search_sections)
                 row_to_add_to_messages = {}
+                llm_response_formatted_for_logs = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
                 if response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
-                    assistant_response = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
+                    assistant_response = llm_response_formatted_for_logs
                     row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame()}
-                    logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {assistant_response}")        
                 else:
                     llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
                     row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
-                    logger.log(ANALYSIS_LEVEL, f"role: assistant, content: {llm_answer}")        
+
                 st.session_state['messages'].append(row_to_add_to_messages)
 
             display_assistant_response(row_to_add_to_messages)
+            log_entry = {"role": "assistant", "content": llm_response_formatted_for_logs}
+            write_data_to_output(json.dumps(log_entry))
             logger.debug("Response added the the queue")
     
 footer()
