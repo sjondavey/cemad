@@ -46,7 +46,11 @@ def display_assistant_response(row):
             document_name = row["document_name"]
             document_key = row["document_key"]
             section_reference = row["section_reference"]
-            text = st.session_state['chat'].index.corpus.get_text(document_key, section_reference, add_markdown_decorators=True, add_headings=True, section_only=False)
+            is_definition = row["is_definition"]
+            if is_definition: # just get the unformatted version because get_text returns all the definitions
+                text = row['text']
+            else:
+                text = st.session_state['chat'].index.corpus.get_text(document_key, section_reference, add_markdown_decorators=True, add_headings=True, section_only=False)
             reference_string = ""
             if row["is_definition"]:
                 if section_reference == "":
