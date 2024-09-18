@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 DEV_LEVEL = 15
 ANALYSIS_LEVEL = 25
 logging.addLevelName(DEV_LEVEL, 'DEV')       
-logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')      
-logger.setLevel(ANALYSIS_LEVEL)
+logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
 
 """  
 I only need this class to implement the workflow hook
@@ -130,7 +129,7 @@ class CorpusChatCEMAD(CorpusChat):
     def execute_path_no_retrieval_no_conversation_history(self, user_content):
         logger.log(DEV_LEVEL, "Executing CorpusChatCEMAD.execute_path_no_retrieval_no_conversation_history() i.e. Trying to help the user to construct a good question")
 
-        system_content = f"You are assisting a user to use a chat bot whose only function is to answer questions about the {self.index.corpus_description}. \ You need to inspect the chat history to see if the latest user interaction is about this topic or not. After reviewing the conversation, respond with one of only two responses: Relevant or Not Relevant.\n Respond with Relevant if the question, with the conversation history is about Exchange Control or the movement of money in or out of a country or group of countries. Respond with Not Relevant if the topic of the question is anything else. Only respond with Relevant or Not Relevant. Do not add any other text, punctuation or markup to your response."
+        system_content = f"You are assisting a user to construct question that can be used to query a vector database for relevant facts. You will be provided with the original user question which contained no matches from the database that were closer than a cutoff threshold. For context, the vector database contains sections of the {self.index.corpus_description}. \nYour initial task is to determine if the user question is about Exchange Control or not. It is possible the user may be engaging in pleasantries or small talk or may just be testing the bounds of the system. For now please respond with one of only two responses: Relevant if the question, with the conversation history is about Exchange Control or the movement of money in or out of a country or group of countries; or Not Relevant if the topic of the question is anything else. Only respond with Relevant or Not Relevant. Do not add any other text, punctuation or markup to your response."
 
         # Create a complete list of messages excluding the system message
         messages = self.format_messages_for_openai()
@@ -141,27 +140,24 @@ class CorpusChatCEMAD(CorpusChat):
         truncated_messages = self._truncate_message_list([system_message], messages, token_limit=self.token_limit_when_truncating_message_queue)
         # NOTE, the truncated_messages will now contain the system message
 
-        logger.log(DEV_LEVEL, truncated_messages)
         initial_response = self._get_api_response(truncated_messages)
-        logger.log(DEV_LEVEL, initial_response)
 
         if initial_response.lower() == 'relevant':
             return self.suggest_alternative_questions(user_content)
         elif initial_response.lower() == 'not relevant':
             return self.hardcode_response_for_question_not_relating_to_excon(user_content)
-        else: # instead of placing the system in "stuck" mode, just continue as if the question was not relevant
-            return self.hardcode_response_for_question_not_relating_to_excon(user_content)
-            # logger.log(DEV_LEVEL, "CorpusChatCEMAD.execute_path_no_retrieval_no_conversation_history() was asked to respond in one of two ways but it ignore this instruction")
-            # return self.place_in_stuck_state()
+        else:
+            logger.log(DEV_LEVEL, "CorpusChatCEMAD.execute_path_no_retrieval_no_conversation_history() was asked to respond in one of two ways but it ignore this instruction")
+            return self.place_in_stuck_state()
 
 
     def suggest_alternative_questions(self, user_content):
 
-        system_content = f"You are assisting a user to construct question that can be used to query a vector database for relevant facts. You will be provided with the original user question which contained no matches from the database that were closer than a cutoff threshold. For context, the vector database contains sections of the {self.index.corpus_description}. \nYour task is to help the user to construct one or more versions of the question which can be answered from the database. Here are some general principles which you could use to help create alternative versions of the question which do have answers in the vector database. \n\
+        system_content = "You are assisting a user to construct question that can be used to query a vector database for relevant facts. You will be provided with the original user question which contained no matches from the database that were closer than a cutoff threshold. For context, the vector database contains sections of the South African Currency and Exchange Control Manual for Authorised Dealers (CEMAD). \nYour task is to help the user to construct one or more versions of the question which can be answered from the database. Here are some general principles which you could use to help create alternative versions of the question which do have answers in the vector database. \n\
 1) CEMAD does not generally refer to countries (other than South Africa) by name. If the user question contains a specific country name other than South Africa, please convert this into  'foreign county' or 'a member of the Common Monetary Area (CMA)'. For example 'Can I open a non-resident rand account for an individual from Eswatini?' should be changed to 'Can I open a non-resident rand account for an individual from the Common Monetary Area?'. \n\
 2) CEMAD does not generally refer to specific currencies other than the Rand. Rather it refers to foreign currency or a currency used in the CMA. If you see a reference to a specific currency or currency code that is not Rand, please convert it to 'foreign currency' or 'CMA country currency' as the case may be. For example, 'Can I receive dividends in dollars?' should be changed to 'Can I receive dividends in foreign currency?' or 'Can I receive dividends in a CMA country currency?' because dollars could be US dollars or Namibian dollars. \n\
 3) Often the question is not specific about the direction of the currency flow. Inflows and outflows are treated in different sections of CEMAD and if the direction of flow is ambiguous, it may not create a good similarity score with sections in the vector database. Try to add a direction of flow to the question. For example 'Who can trade gold?' should be changed to 'Who can import gold?' and 'Who can export gold?' \n\
-4) There are very different exchange control regulations or thresholds for individuals or companies. If the question does not make it clear who the subject of the query is, please add the necessary clarification. For example, 'How much money can I invest offshore?' should be changed to 'How much money can an individual invest offshore?' or 'How much money can a company invest offshore?' depending on the chat context. If there is no context, suggest both options \n\
+4) There are very different exchange control regulations or thresholds for individuals or companies. If the question does not make it clear who the subject of the query is, please add the necessary clarification. For example, 'How much money can I invest offshore?' should be changed to 'How much money can an individual invest offshore?' and 'How much money can a company invest offshore?' \n\
 5) Sometimes the user asks an incomplete question which only makes sense in the context of the entire chat. In this case, try to use the chat history to make a complete question. So a question like 'What is the BOP code for this?' would need to be changed to 'What is the BOP Code for (insert subject here based on the conversation history)?' \n\n\
 Please review the user question and provide one or more alternatives to this which are more likely to return a match from CEMAD. Return these in a pipe delimited list with no other text or explanation."
 
@@ -202,7 +198,7 @@ Please review the user question and provide one or more alternatives to this whi
         logger.log(DEV_LEVEL, "The user context did not appear to be a question relating to Exchange Control")
         self.system_state = CorpusChat.State.RAG         
         self.append_content("user", user_content)       
-        assistant_content = f"ERROR: I am a bot designed to answer questions about the {self.index.corpus_description}. If you ask me a question about that, I will do my best to respond, with a reference. If I cannot find a relevant reference in the document, I have been coded not to respond to the question rather than offing my opinion. Please read the document page for some suggestions if you find this feature frustrating."
+        assistant_content = "ERROR: I am a bot designed to answer questions about South African exchange control regulations. If you ask me a question about those, I will do my best to respond, with a reference. If I cannot find a relevant reference, I will not respond to the question rather than offing my opinion."
         self.append_content("assistant", assistant_content)
         return
 
