@@ -199,7 +199,7 @@ Please review the user question and provide one or more alternatives to this whi
         logger.log(DEV_LEVEL, "The user context did not appear to be a question relating to Exchange Control")
         self.system_state = CorpusChat.State.RAG         
         self.append_content("user", user_content)       
-        assistant_content = f"ERROR: I am a bot designed to answer questions about the {self.index.corpus_description}. If you ask me a question about that, I will do my best to respond, with a reference. If I cannot find a relevant reference in the document, I have been coded not to respond to the question rather than offing my opinion. Please read the document page for some suggestions if you find this feature frustrating."
+        assistant_content = f"ERROR: I am a bot designed to answer questions about the {self.index.corpus_description}. If you ask me a question about that, I will do my best to respond, with a reference. If I cannot find a relevant reference in the document, I have been coded not to respond to the question rather than offing my opinion. Please read the document page for some suggestions if you find this feature frustrating (If you are using this on a mobile phone, look for the little '>' at the top left of your screen)"
         self.append_content("assistant", assistant_content)
         return
 
