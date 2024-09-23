@@ -28,7 +28,15 @@ logger.setLevel(ANALYSIS_LEVEL)
 
 def _setup_blob_storage_for_logging(filename):
     account_url = "https://chatlogsaccount.blob.core.windows.net/"
-    blob_service_client = BlobServiceClient(account_url, credential=st.session_state['credential'])
+    if st.session_state['use_environmental_variables']:
+        chat_blob_store_key = os.getenv("CHAT_BLOB_STORE")
+        connection_string = f"DefaultEndpointsProtocol=https;AccountName=chatlogsaccount;AccountKey={chat_blob_store_key};EndpointSuffix=core.windows.net"
+        # Create the BlobServiceClient object using the connection string
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    else:
+        tmp_credential = DefaultAzureCredential()
+        blob_service_client = BlobServiceClient(account_url, credential=tmp_credential)
+
     container_name = "cemadtest01"
     st.session_state['output_file'] = blob_service_client.get_blob_client(container=container_name, blob=filename)
     # Check if blob exists, if not create an append blob
@@ -44,57 +52,51 @@ def setup_for_azure(filename):
     if 'service_provider' not in st.session_state:
         st.session_state['service_provider'] = 'azure'
 
+    # bypass keyvault and set up everything from environmental variables
+    if "use_environmental_variables" not in st.session_state:
+        st.session_state['use_environmental_variables'] = True 
 
-    if 'key_vault' not in st.session_state:
-        # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
-        # When the app is running in Azure, DefaultAzureCredential automatically detects if a managed identity exists for the App Service and, if so, uses it to access other Azure resources
-        st.session_state['credential'] = DefaultAzureCredential() 
-        st.session_state['key_vault'] = "https://cemadragkeyvault.vault.azure.net/"
+    if st.session_state['use_environmental_variables']:
+        load_dotenv()
+        if 'openai_api' not in st.session_state:
+            secret_name = "OPENAI_API_KEY_CEMAD"
+            openai_api_key = os.getenv(secret_name)
+            st.session_state['openai_client'] = OpenAI(api_key = openai_api_key)
+        _setup_blob_storage_for_logging(filename)
 
-        # Determine if the app is running locally or on Azure. When run locally, DefaultAzureCredential will default to 
-        # environmentcredential and will pull the values AZURE_CLIENT_ID, AZURE_TENANT_ID and AZURE_CLIENT_SECRET from the
-        # .env file 
-        if os.getenv('AZURE_ENVIRONMENT') == 'local':
-            st.session_state['app_path'] = "http://localhost:8501"
+    else: # use key_vault
+        if 'key_vault' not in st.session_state:
+            # https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python
+            # When the app is running in Azure, DefaultAzureCredential automatically detects if a managed identity exists for the App Service and, if so, uses it to access other Azure resources
+            st.session_state['credential'] = DefaultAzureCredential() 
+            st.session_state['key_vault'] = "https://cemadragkeyvault.vault.azure.net/"
 
-            # Load local .env file for credentials
-            load_dotenv()
-            if st.session_state['log_locally']:
-                folder_to_write_to = "./user_data"
-                # Ensure the folder exists
-                os.makedirs(folder_to_write_to, exist_ok=True)            
-                st.session_state['output_file'] = os.path.join(folder_to_write_to, filename)
-            else:            
+            # Determine if the app is running locally or on Azure. When run locally, DefaultAzureCredential will default to 
+            # environmentcredential and will pull the values AZURE_CLIENT_ID, AZURE_TENANT_ID and AZURE_CLIENT_SECRET from the
+            # .env file 
+            if os.getenv('AZURE_ENVIRONMENT') == 'local':
+                st.session_state['app_path'] = "http://localhost:8501"
+
+                # Load local .env file for credentials
+                load_dotenv()
+                if st.session_state['log_locally']:
+                    folder_to_write_to = "./user_data"
+                    # Ensure the folder exists
+                    os.makedirs(folder_to_write_to, exist_ok=True)            
+                    st.session_state['output_file'] = os.path.join(folder_to_write_to, filename)
+                else:            
+                    _setup_blob_storage_for_logging(filename)
+
+            else: # folder in Azure
+                st.session_state['app_path'] = "https://cemadrag-c8cve3anewdpcdhf.southafricanorth-01.azurewebsites.net"
                 _setup_blob_storage_for_logging(filename)
 
-        else: # folder in Azure
-            st.session_state['app_path'] = "https://cemadrag-c8cve3anewdpcdhf.southafricanorth-01.azurewebsites.net"
-            _setup_blob_storage_for_logging(filename)
 
-            # account_url = "https://chatlogsaccount.blob.core.windows.net/"
-            # blob_service_client = BlobServiceClient(account_url, credential=st.session_state['credential'])
-            # container_name = "cemadtest01"
-            # st.session_state['output_file'] = blob_service_client.get_blob_client(container=container_name, blob=filename)
-            # # Check if blob exists, if not create an append blob
-            # try:
-            #     st.session_state['output_file'].get_blob_properties()  # Check if blob exists
-            # except:
-            #     # Create an empty append blob if it doesn't exist
-            #     st.session_state['output_file'].create_append_blob()
+        if 'openai_api' not in st.session_state:
+            secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
+            api_key = secret_client.get_secret(secret_name)
+            st.session_state['openai_client'] = OpenAI(api_key = api_key.value)
 
-
-
-    if 'openai_api' not in st.session_state:
-        secret_name = "OPENAI-API-KEY-CEMAD"
-        secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
-        api_key = secret_client.get_secret(secret_name)
-        st.session_state['openai_client'] = OpenAI(api_key = api_key.value)
-
-    # if 'output_folder' not in st.session_state:
-    #     # Ensure the directory exists
-    #     # folder_to_write_to = "./user_data/"
-    #     # os.makedirs(folder_to_write_to, exist_ok=True)
-    #     st.session_state['output_folder'] = folder_to_write_to
 
     if not "password_correct" in st.session_state: # No passwords yet in Azure but passwords required for other pages
         st.session_state["password_correct"] = True
@@ -171,10 +173,15 @@ def load_data(service_provider):
     with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
         
         if service_provider == 'azure':
-            secret_name = "DECRYPTION-KEY-CEMAD"
-            secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
-            key = secret_client.get_secret(secret_name)
-            corpus_index = CEMADCorpusIndex(key.value)
+            use_environmental_variables = True
+            if use_environmental_variables:
+                secret_name = "DECRYPTION_KEY_CEMAD"
+                decrytion_key = os.getenv(secret_name)
+                corpus_index = CEMADCorpusIndex(decrytion_key)
+            else:
+                secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
+                key = secret_client.get_secret(secret_name)
+                corpus_index = CEMADCorpusIndex(key.value)
         elif service_provider == 'streamlit':
             key = st.secrets["index"]["decryption_key"]
             corpus_index = CEMADCorpusIndex(key)
