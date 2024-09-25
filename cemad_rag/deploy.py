@@ -8,14 +8,19 @@ def deploy(base_folder):
     base_folder = ".." when running from "working" folder
 
     ''' 
-    destination = "e:/code/chat/cemad_rag"
+    destination = "d:/code/chat/cemad_rag"
 
     items_to_copy = [base_folder + "/cemad_rag/",
                      base_folder + "/.gitignore",
-                     base_folder + "/Question_Answering.py",
-                     base_folder + "/pages/",
+                     base_folder + "/app.py",
+                     base_folder + "/footer.py",
+                     base_folder + "/publication_icon.jpg",
+                     base_folder + "/streamlit_common.py",
+                     base_folder + "/streamlit_pages/",
                      base_folder + "/.streamlit/secrets.toml",
+                     base_folder + "/.streamlit/config.toml",
                      base_folder + "/inputs/",
+                     base_folder + "/.env/",
                      ]
 
 

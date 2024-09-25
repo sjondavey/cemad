@@ -1,5 +1,6 @@
 
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/user.txt
 __pycache__/
 
 # Unit test / coverage reports
@@ -13,3 +14,7 @@ __pycache__/
 /tmp
 
 /pdf
+/env
+/user_data
+
+.env

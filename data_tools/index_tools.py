@@ -24,11 +24,11 @@ def update_text_in_index(openai_client, index_df, text_to_change, changed_text, 
     return index_df
 
 
-def add_to_index(openai_client, index_df, text, section_reference, source, embedding_model, embedding_dimensions):
+def add_to_index(openai_client, index_df, text, section_reference, source, embedding_model, embedding_dimensions, document):
 
     new_embedding = get_ada_embedding(openai_client = openai_client, text = text, model = embedding_model, dimensions = embedding_dimensions)
 
-    new_df = pd.DataFrame([[section_reference, text, source, new_embedding]],columns = ["section_reference", "text", "source" , "embedding"])
+    new_df = pd.DataFrame([[section_reference, text, source, new_embedding, document]],columns = ["section_reference", "text", "source" , "embedding", "document"])
     index_df = pd.concat([index_df, new_df], ignore_index=True)
     return index_df
 
