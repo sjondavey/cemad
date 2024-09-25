@@ -166,6 +166,9 @@ def setup_for_streamlit(insist_on_password = False):
             if not check_password():
                 st.stop()
 
+@st.cache_resource
+def load_cemad_corpus_index(key):
+    return CEMADCorpusIndex(key)
 
 def load_data(service_provider):
     logger.log(ANALYSIS_LEVEL, f"*** Loading data for {st.session_state['user_id']}. Should only happen once")
@@ -173,18 +176,17 @@ def load_data(service_provider):
     with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
         
         if service_provider == 'azure':
-            use_environmental_variables = True
-            if use_environmental_variables:
+            if st.session_state['use_environmental_variables']:
                 secret_name = "DECRYPTION_KEY_CEMAD"
                 decrytion_key = os.getenv(secret_name)
-                corpus_index = CEMADCorpusIndex(decrytion_key)
+                corpus_index = load_cemad_corpus_index(decrytion_key)
             else:
                 secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
                 key = secret_client.get_secret(secret_name)
-                corpus_index = CEMADCorpusIndex(key.value)
+                corpus_index = load_cemad_corpus_index(key.value)
         elif service_provider == 'streamlit':
             key = st.secrets["index"]["decryption_key"]
-            corpus_index = CEMADCorpusIndex(key)
+            corpus_index = load_cemad_corpus_index(key)
 
         rerank_algo = RerankAlgos.LLM
         rerank_algo.params["openai_client"] = st.session_state['openai_client']
