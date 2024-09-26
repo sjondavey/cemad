@@ -1,7 +1,7 @@
 from enum import Enum
 from regulations_rag.corpus_chat import CorpusChat
-from regulations_rag.rerank import RerankAlgos
-import copy
+from regulations_rag.rerank import RerankAlgos, rerank
+from regulations_rag.embeddings import get_ada_embedding
 
 import logging
 logger = logging.getLogger(__name__)
@@ -85,16 +85,30 @@ class CorpusChatCEMAD(CorpusChat):
         else:
             return super()._check_response(llm_response_text, df_definitions, df_sections)
 
-    def _reformat_assistant_answer(self, result, df_definitions, df_search_sections):
+    def _extract_assistant_answer_and_references(self, result, df_definitions, df_search_sections):
         if result["path"] == CorpusChatCEMAD.Prefix.ALTERNATIVE.value:
-            # We know that there are alternatives otherwise we would not be in this path
             alternative_questions_with_search_results = result["alternatives"]
 
             if len(alternative_questions_with_search_results) == 1:
                 assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however is a different phrasing of the question which should find some reference material in the {self.index.corpus_description}. Perhaps try:\n\n" 
-                assistant_content = assistant_content + "\n" + alternative_questions_with_search_results[0]
             else: 
                 assistant_content = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however are different phrasings of the question which should find some reference material in the {self.index.corpus_description}: Perhaps try\n\n" 
+
+            return assistant_content, alternative_questions_with_search_results
+        return super()._extract_assistant_answer_and_references(result, df_definitions, df_search_sections)
+
+
+    def _reformat_assistant_answer(self, result, df_definitions, df_search_sections):
+        text, references = self._extract_assistant_answer_and_references(result, df_definitions, df_search_sections)
+        if result["path"] == CorpusChatCEMAD.Prefix.ALTERNATIVE.value:
+            # We know that there are alternatives otherwise we would not be in this path
+            alternative_questions_with_search_results = references
+
+            if len(alternative_questions_with_search_results) == 1:
+                assistant_content = text
+                assistant_content = assistant_content + "\n" + alternative_questions_with_search_results[0]
+            else: 
+                assistant_content = text
                 counter = 1
                 for question in alternative_questions_with_search_results:
                     assistant_content = assistant_content + "\n" + str(counter) + ") " + question
@@ -181,10 +195,16 @@ Please review the user question and provide one or more alternatives to this whi
 
         alternative_questions_with_search_results = []
         for question in list_of_alternative_questions:
-            workflow_triggered, relevant_definitions, relevant_sections = self.similarity_search(question)
+            print(f"Checking atletnative: {question}")
+            question_embedding = get_ada_embedding(self.openai_client, question, self.embedding_parameters.model, self.embedding_parameters.dimensions)        
+            relevant_definitions = self.index.get_relevant_definitions(user_content = question, user_content_embedding = question_embedding, threshold = self.embedding_parameters.threshold_definitions)
+            relevant_sections = self.index.get_relevant_sections(user_content = question, 
+                                                             user_content_embedding = question_embedding, 
+                                                             threshold = self.embedding_parameters.threshold, 
+                                                             rerank_algo = self.rerank_algo)            
             if len(relevant_definitions) + len(relevant_sections) > 0:
                 alternative_questions_with_search_results.append(question)
-
+        
         if len(alternative_questions_with_search_results) == 0:
             assistant_content = self.Errors.NO_DATA.value
         else:

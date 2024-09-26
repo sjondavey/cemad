@@ -56,7 +56,7 @@ def anytree_to_treeitem(node):
 
 
 
-
+@st.cache_resource
 def load_tree_data():
     date_ordered_list_of_documents = ['cemad.py', 'cemad_user_queries.py']
 
