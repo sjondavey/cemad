@@ -51,7 +51,8 @@ if "use_environmental_variables" not in st.session_state:
 
 if 'log_locally' not in st.session_state:
     st.session_state['log_locally'] = False
-    st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER')
+    container = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
+    st.session_state['blob_container_name'] = container
     st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
     st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
 

@@ -4,7 +4,6 @@ import re
 from cemad_rag.cemad_reference_checker import CEMADReferenceChecker
 
 
-
 def process_regulations(filenames_as_list, reference_checker, non_text_labels):
     all_data_as_lines = []
     non_text = {}

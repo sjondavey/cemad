@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from cemad_rag.cemad_reference_checker import CEMADReferenceChecker
 
-from regulations_rag.reg_tools import get_regulation_detail
+from file_tools.reg_tools import get_regulation_detail
 from regulations_rag.embeddings import num_tokens_from_string
         
 
