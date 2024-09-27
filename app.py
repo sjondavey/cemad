@@ -5,13 +5,12 @@ import logging
 
 import streamlit as st
 import os
-import re
 import pandas as pd
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
 
 from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
-from footer import footer
 
 from azure.identity import DefaultAzureCredential
 
@@ -45,8 +44,16 @@ logger.setLevel(ANALYSIS_LEVEL)
 
 st.set_page_config(page_title="Excon Answers", page_icon="./publication_icon.jpg", layout="wide")
 
+if "use_environmental_variables" not in st.session_state:
+    st.session_state['use_environmental_variables'] = True 
+    if st.session_state['use_environmental_variables']:
+        load_dotenv()
+
 if 'log_locally' not in st.session_state:
     st.session_state['log_locally'] = False
+    st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER')
+    st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
+    st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
 
 # Start with username because we need it to create the log file
 if 'user_id' not in st.session_state:
