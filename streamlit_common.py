@@ -1,6 +1,5 @@
 import logging
 import os
-from dotenv import load_dotenv
 from openai import OpenAI
 import platform
 import bcrypt
@@ -26,19 +25,30 @@ logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')
 logger = logging.getLogger(__name__)
 logger.setLevel(ANALYSIS_LEVEL)
 
-def _setup_blob_storage_for_logging(filename):
-    account_url = "https://chatlogsaccount.blob.core.windows.net/"
+# The container will be the same for all files in the session so only connect to it once.
+@st.cache_resource
+def _get_blog_container():
     if st.session_state['use_environmental_variables']:
-        chat_blob_store_key = os.getenv("CHAT_BLOB_STORE")
-        connection_string = f"DefaultEndpointsProtocol=https;AccountName=chatlogsaccount;AccountKey={chat_blob_store_key};EndpointSuffix=core.windows.net"
+        connection_string = f"DefaultEndpointsProtocol=https;AccountName=chatlogsaccount;AccountKey={st.session_state['blob_store_key']};EndpointSuffix=core.windows.net"
         # Create the BlobServiceClient object using the connection string
         blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     else:
         tmp_credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(account_url, credential=tmp_credential)
+        blob_service_client = BlobServiceClient(st.session_state['blob_account_url'], credential=tmp_credential)
 
-    container_name = "cemadtest01"
-    st.session_state['output_file'] = blob_service_client.get_blob_client(container=container_name, blob=filename)
+    # Get the container client
+    container_client = blob_service_client.get_container_client(st.session_state['blob_container_name'])
+
+    # Check if the container exists, and create it if it doesn't
+    if not container_client.exists():
+        container_client.create_container()
+
+    return container_client
+
+def _setup_blob_storage_for_logging(filename):
+    container_client = _get_blog_container()
+
+    st.session_state['output_file'] = container_client.get_blob_client(filename)
     # Check if blob exists, if not create an append blob
     try:
         st.session_state['output_file'].get_blob_properties()  # Check if blob exists
@@ -53,16 +63,16 @@ def setup_for_azure(filename):
         st.session_state['service_provider'] = 'azure'
 
     # bypass keyvault and set up everything from environmental variables
-    if "use_environmental_variables" not in st.session_state:
-        st.session_state['use_environmental_variables'] = True 
-
     if st.session_state['use_environmental_variables']:
-        load_dotenv()
         if 'openai_api' not in st.session_state:
             secret_name = "OPENAI_API_KEY_CEMAD"
             openai_api_key = os.getenv(secret_name)
             st.session_state['openai_client'] = OpenAI(api_key = openai_api_key)
         _setup_blob_storage_for_logging(filename)
+        if 'corpus_decryption_key' not in st.session_state:
+            secret_name = "DECRYPTION_KEY_CEMAD"
+            st.session_state['corpus_decryption_key'] = os.getenv(secret_name)
+
 
     else: # use key_vault
         if 'key_vault' not in st.session_state:
@@ -77,19 +87,13 @@ def setup_for_azure(filename):
             if os.getenv('AZURE_ENVIRONMENT') == 'local':
                 st.session_state['app_path'] = "http://localhost:8501"
 
-                # Load local .env file for credentials
-                load_dotenv()
-                if st.session_state['log_locally']:
-                    folder_to_write_to = "./user_data"
-                    # Ensure the folder exists
-                    os.makedirs(folder_to_write_to, exist_ok=True)            
-                    st.session_state['output_file'] = os.path.join(folder_to_write_to, filename)
-                else:            
-                    _setup_blob_storage_for_logging(filename)
-
             else: # folder in Azure
                 st.session_state['app_path'] = "https://cemadrag-c8cve3anewdpcdhf.southafricanorth-01.azurewebsites.net"
-                _setup_blob_storage_for_logging(filename)
+
+            _setup_blob_storage_for_logging(filename)
+            if 'corpus_decryption_key' not in st.session_state:
+                secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
+                st.session_state['corpus_decryption_key'] = secret_client.get_secret(secret_name).value
 
 
         if 'openai_api' not in st.session_state:
@@ -100,6 +104,8 @@ def setup_for_azure(filename):
 
     if not "password_correct" in st.session_state: # No passwords yet in Azure but passwords required for other pages
         st.session_state["password_correct"] = True
+
+
 
 def setup_for_streamlit(insist_on_password = False):
     if 'service_provider' not in st.session_state:
@@ -115,6 +121,9 @@ def setup_for_streamlit(insist_on_password = False):
 
     if 'output_folder' not in st.session_state:
         st.session_state['output_folder'] = "./user_data/"
+
+    if 'corpus_decryption_key' not in st.session_state:
+        st.session_state['corpus_decryption_key'] = st.secrets["index"]["decryption_key"]
 
     if 'openai_api' not in st.session_state:
         st.session_state['openai_client'] = OpenAI(api_key = st.secrets['openai']['OPENAI_API_KEY'])
@@ -175,18 +184,8 @@ def load_data(service_provider):
     logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
         
-        if service_provider == 'azure':
-            if st.session_state['use_environmental_variables']:
-                secret_name = "DECRYPTION_KEY_CEMAD"
-                decrytion_key = os.getenv(secret_name)
-                corpus_index = load_cemad_corpus_index(decrytion_key)
-            else:
-                secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
-                key = secret_client.get_secret(secret_name)
-                corpus_index = load_cemad_corpus_index(key.value)
-        elif service_provider == 'streamlit':
-            key = st.secrets["index"]["decryption_key"]
-            corpus_index = load_cemad_corpus_index(key)
+
+        corpus_index = load_cemad_corpus_index(st.session_state['corpus_decryption_key'])
 
         rerank_algo = RerankAlgos.LLM
         rerank_algo.params["openai_client"] = st.session_state['openai_client']

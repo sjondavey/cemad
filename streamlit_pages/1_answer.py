@@ -37,6 +37,21 @@ if "messages" not in st.session_state.keys():
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
 
+def create_user_question(prompt):
+    st.session_state["user_input"] = prompt
+    # print("create_user_question called")
+    # log_entry = {"role": "user", "content": prompt, "from_button": True}
+    # st.session_state['messages'].append(log_entry)
+    # write_data_to_output(json.dumps(log_entry))
+
+    # with st.chat_message("user"):
+    #     print('st.chat_message("user")')
+    #     st.markdown(prompt)
+    # with st.chat_message("assistant"):
+    #     print('st.chat_message("assistant")')
+    #     with st.spinner("Thinking..."):
+    #         make_call_to_chat(prompt)    
+
 def display_assistant_response(row):
     answer = row["content"]
     references = row.get("section_reference") # This will return the value if the key exists, or None if it doesn't.
@@ -64,7 +79,10 @@ def display_assistant_response(row):
                     reference_string += f"Section {section_reference} from {document_name}  \n"
             with st.expander(reference_string):
                 st.markdown(text, unsafe_allow_html=True)
-
+    elif "alternative_phrasing" in row:
+        for alternative in row["alternative_phrasing"]:
+            with st.spinner("Thinking..."):
+                st.button(alternative, on_click=create_user_question, args=(alternative, ))
 
 # Display or clear chat messages
 # https://discuss.streamlit.io/t/chat-message-assistant-component-getting-pushed-into-user-message/57231
@@ -87,41 +105,51 @@ with st.sidebar:
     st.markdown('**Press the "Clear Chat History" button before you change topic**')
     st.markdown(f'Looking for inspiration? The Reserve Bank has a list of <a href="https://www.resbank.co.za/en/home/what-we-do/financial-surveillance/FinSurvFAQ" target="_blank">Frequently Asked Questions</a>. Try asking one of those here.', unsafe_allow_html=True)
 
+def make_call_to_chat(prompt):
+    logger.debug(f"Making call with prompt: {prompt}")                            
+    st.session_state['chat'].user_provides_input(prompt)
+    raw_response = st.session_state['chat'].messages_intermediate[-1]
+    llm_reply = raw_response['content']
+    df_definitions = raw_response['definitions']
+    df_search_sections = raw_response['sections']
+    response_dict = st.session_state['chat']._check_response(llm_reply, df_definitions, df_search_sections)
+    row_to_add_to_messages = {}
+    llm_response_formatted_for_logs = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
+    if response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
+        llm_answer, other_suggestions = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
+        assistant_response = llm_answer # llm_response_formatted_for_logs
+        row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame(), "alternative_phrasing": other_suggestions}
+    else:
+        llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
+        row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
+
+    st.session_state['messages'].append(row_to_add_to_messages)
+
+    display_assistant_response(row_to_add_to_messages)
+    log_entry = {"role": "assistant", "content": llm_response_formatted_for_logs}
+    write_data_to_output(json.dumps(log_entry))
+    logger.debug("Response added the the queue")
+
 
 # User-provided prompt
-if prompt := st.chat_input(placeholder="Ask your Exchange Control related question here"):
-    if prompt is not None and prompt != "":
-        log_entry = {"role": "user", "content": prompt}
-        st.session_state['messages'].append(log_entry)
-        write_data_to_output(json.dumps(log_entry))
+prompt = st.chat_input(placeholder="Ask your Exchange Control related question here")
 
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        with st.chat_message("assistant"):
-            llm_response_formatted_for_logs = ""
+if "user_input" in st.session_state:
+    prompt = st.session_state["user_input"]
+    del st.session_state["user_input"]  # Clear it after using
+    
+if prompt is not None and prompt != "":
+    log_entry = {"role": "user", "content": prompt}
+    st.session_state['messages'].append(log_entry)
+    write_data_to_output(json.dumps(log_entry))
 
-            with st.spinner("Thinking..."):
-                logger.debug(f"Making call with prompt: {prompt}")                            
-                st.session_state['chat'].user_provides_input(prompt)
-                raw_response = st.session_state['chat'].messages_intermediate[-1]
-                llm_reply = raw_response['content']
-                df_definitions = raw_response['definitions']
-                df_search_sections = raw_response['sections']
-                response_dict = st.session_state['chat']._check_response(llm_reply, df_definitions, df_search_sections)
-                row_to_add_to_messages = {}
-                llm_response_formatted_for_logs = st.session_state['chat']._reformat_assistant_answer(response_dict, df_definitions, df_search_sections)
-                if response_dict['path'] == st.session_state['chat'].Prefix.ALTERNATIVE.value:
-                    assistant_response = llm_response_formatted_for_logs
-                    row_to_add_to_messages = {"role": "assistant", "content": assistant_response, "section_reference": pd.DataFrame()}
-                else:
-                    llm_answer, df_references_list = st.session_state['chat']._extract_assistant_answer_and_references(response_dict, df_definitions, df_search_sections)
-                    row_to_add_to_messages = {"role": "assistant", "content": response_dict['answer'], "section_reference": df_references_list}
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    with st.chat_message("assistant"):
+        llm_response_formatted_for_logs = ""
 
-                st.session_state['messages'].append(row_to_add_to_messages)
+        with st.spinner("Thinking..."):
+            make_call_to_chat(prompt)
 
-            display_assistant_response(row_to_add_to_messages)
-            log_entry = {"role": "assistant", "content": llm_response_formatted_for_logs}
-            write_data_to_output(json.dumps(log_entry))
-            logger.debug("Response added the the queue")
     
 footer()
