@@ -17,13 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_081271124233468BBC6D3542A099B35E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B38DA5C1C5A24500BD649E0DE4B1F779 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F2E0D42ADC494D32A78B03B12B8B3D6A }}
-
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
