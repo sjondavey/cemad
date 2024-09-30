@@ -72,7 +72,7 @@ jobs:
       # Step 1: Upload local app_offline.htm to Azure Web App to take the app offline before deployment
       - name: Upload local app_offline.htm to Azure Web App
         run: |
-          az webapp deployment source config-zip --resource-group 'YourResourceGroup' --name 'cemadragdev' --src maintenance/app_offline.htm
+          az webapp deploy --resource-group 'YourResourceGroup' --name 'cemadragdev' --src-path maintenance/app_offline.htm
 
       # Step 2: Deploy the Streamlit app
       - name: 'Deploy to Azure Web App'
