@@ -61,7 +61,7 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -69,10 +69,20 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B38DA5C1C5A24500BD649E0DE4B1F779 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F2E0D42ADC494D32A78B03B12B8B3D6A }}
 
+      # Step 1: Upload local app_offline.htm to Azure Web App to take the app offline before deployment
+      - name: Upload local app_offline.htm to Azure Web App
+        run: |
+          az webapp deployment source config-zip --resource-group 'YourResourceGroup' --name 'cemadragdev' --src maintenance/app_offline.htm
+
+      # Step 2: Deploy the Streamlit app
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
           app-name: 'cemadragdev'
           slot-name: 'Production'
-          
+
+      # Step 3: Remove app_offline.htm after deployment to bring the app back online
+      - name: Remove app_offline.htm to bring the app back online
+        run: |
+          az webapp delete --resource-group 'YourResourceGroup' --name 'cemadragdev' --src app_offline.htm

@@ -34,7 +34,7 @@ st.set_page_config(page_title="Excon Answers", page_icon="./publication_icon.jpg
 
 if 'temp_logging_file_name' not in st.session_state:
     # Call the setup_logging to configure all loggers
-    st.session_state['temp_logging_file_name'] = setup_logging(max_bytes=5 * 1024 * 1024, backup_count=1)
+    st.session_state['temp_logging_file_name'] = setup_logging(max_bytes=2 * 1024 * 1024, backup_count=1)
     logger = logging.getLogger(__name__)
     logger.setLevel(ANALYSIS_LEVEL)
 
