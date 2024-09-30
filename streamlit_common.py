@@ -8,7 +8,7 @@ import streamlit as st
 
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, ContentSettings
 
 from regulations_rag.rerank import RerankAlgos
 from regulations_rag.corpus_chat import ChatParameters
@@ -45,7 +45,27 @@ def _get_blog_container():
 
     return container_client
 
+
+@st.cache_resource
 def _setup_blob_storage_for_logging(filename):
+    container_client = _get_blog_container()
+    logging_blob = container_client.get_blob_client(filename)
+    
+    blob_exists = logging_blob.exists()
+    if not blob_exists:
+        with open(st.session_state['temp_logging_file_name'], "rb") as temp_file:
+            container_client.upload_blob(name=filename, data=temp_file, content_settings=ContentSettings(content_type='text/plain'))
+    # else:
+    #     #existing_content = st.session_state['logging_blob'].download_blob().readall().decode('utf-8')
+    #     with open(st.session_state['temp_logging_file_name'], "r") as temp_file:
+    #         content = temp_file.read()
+    #     st.session_state['logging_blob'].upload_blob(data=content, overwrite=True)
+    return logging_blob
+
+
+# summary data for analysis is sent to individual files per session
+# https://stackoverflow.com/questions/77600048/azure-function-logging-to-azure-blob-with-python
+def _setup_blob_storage_for_data_collecttion(filename):
     container_client = _get_blog_container()
 
     st.session_state['output_file'] = container_client.get_blob_client(filename)
@@ -68,7 +88,6 @@ def setup_for_azure(filename):
             secret_name = "OPENAI_API_KEY_CEMAD"
             openai_api_key = os.getenv(secret_name)
             st.session_state['openai_client'] = OpenAI(api_key = openai_api_key)
-        _setup_blob_storage_for_logging(filename)
         if 'corpus_decryption_key' not in st.session_state:
             secret_name = "DECRYPTION_KEY_CEMAD"
             st.session_state['corpus_decryption_key'] = os.getenv(secret_name)
@@ -90,17 +109,18 @@ def setup_for_azure(filename):
             else: # folder in Azure
                 st.session_state['app_path'] = "https://cemadrag-c8cve3anewdpcdhf.southafricanorth-01.azurewebsites.net"
 
-            _setup_blob_storage_for_logging(filename)
             if 'corpus_decryption_key' not in st.session_state:
                 secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
                 st.session_state['corpus_decryption_key'] = secret_client.get_secret(secret_name).value
-
 
         if 'openai_api' not in st.session_state:
             secret_client = SecretClient(vault_url=st.session_state['key_vault'], credential=st.session_state['credential'])
             api_key = secret_client.get_secret(secret_name)
             st.session_state['openai_client'] = OpenAI(api_key = api_key.value)
 
+    _setup_blob_storage_for_data_collecttion(filename)
+    st.session_state['app_log_blob_file_name'] = "app_log_data.txt"
+    st.session_state['logging_blob'] = _setup_blob_storage_for_logging(st.session_state['app_log_blob_file_name'])
 
     if not "password_correct" in st.session_state: # No passwords yet in Azure but passwords required for other pages
         st.session_state["password_correct"] = True
@@ -177,14 +197,11 @@ def setup_for_streamlit(insist_on_password = False):
 
 @st.cache_resource
 def load_cemad_corpus_index(key):
+    logger.log(ANALYSIS_LEVEL, f"*** Loading cemad corpis index. This should only happen once")
     return CEMADCorpusIndex(key)
 
 def load_data(service_provider):
-    logger.log(ANALYSIS_LEVEL, f"*** Loading data for {st.session_state['user_id']}. Should only happen once")
-    logger.debug(f'--> cache_resource called again to reload data')
     with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
-        
-
         corpus_index = load_cemad_corpus_index(st.session_state['corpus_decryption_key'])
 
         rerank_algo = RerankAlgos.LLM
@@ -209,12 +226,16 @@ def load_data(service_provider):
 
 def write_data_to_output(text):
     if st.session_state['service_provider'] == 'azure':
-        if os.getenv('AZURE_ENVIRONMENT') == 'local':            
-            if st.session_state['log_locally']:
-                # Write to the file
-                with open(st.session_state['output_file'], 'a') as file:
-                    file.write(text + "\n")
-            else:
-                st.session_state['output_file'].append_block(text + "\n")
+        # bespoke data per user
+        st.session_state['output_file'].append_block(text + "\n")
+        # logs
+
+        blob_exists = st.session_state['logging_blob'].exists()
+        if not blob_exists:
+            with open(st.session_state['temp_logging_file_name'], "rb") as temp_file:
+                container_client = _get_blog_container()
+                container_client.upload_blob(name=st.session_state['app_log_blob_file_name'], data=temp_file, content_settings=ContentSettings(content_type='text/plain'))
         else:
-            st.session_state['output_file'].append_block(text + "\n")
+            with open(st.session_state['temp_logging_file_name'], "r") as temp_file:
+                content = temp_file.read()
+            st.session_state['logging_blob'].upload_blob(data=content, overwrite=True)

@@ -2,36 +2,23 @@
 # https://learn.microsoft.com/en-us/entra/fundamentals/how-to-create-delete-users
 # https://discuss.streamlit.io/t/get-active-directory-authentification-data/22105/57 / https://github.com/kevintupper/streamlit-auth-demo
 import logging
+from logging_config import setup_logging
 
 import streamlit as st
 import os
-import pandas as pd
 import sys
 from datetime import datetime
 from dotenv import load_dotenv
 
 from streamlit_common import setup_for_azure, setup_for_streamlit, load_data
 
-from azure.identity import DefaultAzureCredential
-
-
-from regulations_rag.rerank import RerankAlgos
-
-from regulations_rag.corpus_chat import ChatParameters
-from regulations_rag.embeddings import  EmbeddingParameters
-
-from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
-from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
-
-
 DEV_LEVEL = 15
 ANALYSIS_LEVEL = 25
 logging.addLevelName(DEV_LEVEL, 'DEV')       
 logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')       
 
-logging.basicConfig(level=ANALYSIS_LEVEL)
-logger = logging.getLogger(__name__)
-logger.setLevel(ANALYSIS_LEVEL)
+
+
 
 # https://docs.streamlit.io/develop/api-reference/cli/run
 # If you need to pass an argument to your script, run it as follows:
@@ -43,6 +30,15 @@ logger.setLevel(ANALYSIS_LEVEL)
 #     sys.argv[3] == "arguments"
 
 st.set_page_config(page_title="Excon Answers", page_icon="./publication_icon.jpg", layout="wide")
+
+
+if 'temp_logging_file_name' not in st.session_state:
+    # Call the setup_logging to configure all loggers
+    st.session_state['temp_logging_file_name'] = setup_logging(max_bytes=5 * 1024 * 1024, backup_count=1)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(ANALYSIS_LEVEL)
+
+
 
 if "use_environmental_variables" not in st.session_state:
     st.session_state['use_environmental_variables'] = True 
@@ -58,10 +54,11 @@ if 'log_locally' not in st.session_state:
 
 # Start with username because we need it to create the log file
 if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = "TODO: Get Name"
     now = datetime.now()
     date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
     filename = date_time_str + "_user_id.log"
+    st.session_state['user_id'] = date_time_str
+    logger.log(ANALYSIS_LEVEL, f"New session for user {st.session_state['user_id']}")
 
 
 if 'service_provider' not in st.session_state:
