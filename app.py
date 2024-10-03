@@ -9,7 +9,8 @@ from streamlit_common import setup_for_azure, \
                              setup_for_streamlit, \
                              load_data, \
                              setup_log_storage, \
-                             write_global_data_to_blob
+                             write_global_data_to_blob, \
+                             write_session_data_to_blob
 
 import logging
 from logging_config import setup_logging
@@ -88,4 +89,5 @@ except Exception as e:
     logger = logging.getLogger(__name__)
     logger.error(error_string)
     write_global_data_to_blob()
+    write_session_data_to_blob(error_string)
     raise e
