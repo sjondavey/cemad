@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 
-from streamlit_common import setup_for_azure, setup_for_streamlit, load_data, write_data_to_output
+from streamlit_common import write_session_data_to_blob
 from footer import footer
 
 
@@ -36,18 +36,6 @@ if "messages" not in st.session_state.keys():
 
 def create_user_question(prompt):
     st.session_state["user_input"] = prompt
-    # print("create_user_question called")
-    # log_entry = {"role": "user", "content": prompt, "from_button": True}
-    # st.session_state['messages'].append(log_entry)
-    # write_data_to_output(json.dumps(log_entry))
-
-    # with st.chat_message("user"):
-    #     print('st.chat_message("user")')
-    #     st.markdown(prompt)
-    # with st.chat_message("assistant"):
-    #     print('st.chat_message("assistant")')
-    #     with st.spinner("Thinking..."):
-    #         make_call_to_chat(prompt)    
 
 def display_assistant_response(row):
     answer = row["content"]
@@ -94,7 +82,7 @@ def clear_chat_history():
     # logger.debug("Clearing \'messages\'")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
-    write_data_to_output('{"role": "action", "content": "Clear history"}')
+    write_session_data_to_blob('{"role": "action", "content": "Clear history"}')
 
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 with st.sidebar:
@@ -124,7 +112,7 @@ def make_call_to_chat(prompt):
 
     display_assistant_response(row_to_add_to_messages)
     log_entry = {"role": "assistant", "content": llm_response_formatted_for_logs}
-    write_data_to_output(json.dumps(log_entry))
+    write_session_data_to_blob(json.dumps(log_entry))
     logger.debug("Response added the the queue")
 
 
@@ -138,7 +126,7 @@ if "user_input" in st.session_state:
 if prompt is not None and prompt != "":
     log_entry = {"role": "user", "content": prompt}
     st.session_state['messages'].append(log_entry)
-    write_data_to_output(json.dumps(log_entry))
+    write_session_data_to_blob(json.dumps(log_entry))
 
     with st.chat_message("user"):
         st.markdown(prompt)

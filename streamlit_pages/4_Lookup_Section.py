@@ -2,7 +2,7 @@ import json
 import streamlit as st
 from cemad_rag.corpus_chat_cemad import CorpusChatCEMAD
 
-from streamlit_common import write_data_to_output
+from streamlit_common import write_session_data_to_blob
 
 
 st.title('Dealer Manual: Section Lookup')
@@ -18,7 +18,7 @@ for message in st.session_state.messages_lookup:
 
 def clear_chat_history():
     st.session_state.messages_lookup = [{"role": "assistant", "content": "Which section are you after?"}]
-    write_data_to_output('{"role": "action_section_lookup", "content": "Clear history"}')
+    write_session_data_to_blob('{"role": "action_section_lookup", "content": "Clear history"}')
 
 
 with st.sidebar:
@@ -33,7 +33,7 @@ if prompt := st.chat_input(disabled= ('password_correct' not in st.session_state
     with st.chat_message("user"):
         st.write(prompt)
         log_entry = {"role": "user_section_lookup", "content": prompt}
-        write_data_to_output(json.dumps(log_entry))
+        write_session_data_to_blob(json.dumps(log_entry))
 
 
 # Generate a new response if last message is not from assistant

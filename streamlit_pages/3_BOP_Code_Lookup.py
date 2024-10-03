@@ -2,7 +2,7 @@ import streamlit as st
 from regulations_rag.embeddings import get_ada_embedding, get_closest_nodes
 import pandas as pd
 import json
-from streamlit_common import write_data_to_output
+from streamlit_common import write_session_data_to_blob
 
 st.title('Search BOP Codes')
 
@@ -29,7 +29,7 @@ for message in st.session_state['bop_lookup']:
 
 def clear_chat_history():
     st.session_state['bop_lookup'] = [{"role": "assistant", "content": "Which code are you looking for?"}]
-    write_data_to_output('{"role": "action_bop_lookup", "content": "Clear history"}')
+    write_session_data_to_blob('{"role": "action_bop_lookup", "content": "Clear history"}')
 
 with st.sidebar:
     st.button('Clear Lookup History', on_click=clear_chat_history)
@@ -43,7 +43,7 @@ if prompt := st.chat_input(disabled= ('password_correct' not in st.session_state
     with st.chat_message("user"):
         st.write(prompt)        
         log_entry = {"role": "user_bop_lookup", "content": prompt}
-        write_data_to_output(json.dumps(log_entry))
+        write_session_data_to_blob(json.dumps(log_entry))
 
 
 # Generate a new response if last message is not from assistant
