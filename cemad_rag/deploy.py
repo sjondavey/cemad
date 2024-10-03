@@ -13,6 +13,7 @@ def deploy(base_folder):
     items_to_copy = [base_folder + "/cemad_rag/",
                      base_folder + "/.gitignore",
                      base_folder + "/app.py",
+                     base_folder + "/logging_config.py",
                      base_folder + "/footer.py",
                      base_folder + "/publication_icon.jpg",
                      base_folder + "/streamlit_common.py",
