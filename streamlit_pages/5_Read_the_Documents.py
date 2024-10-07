@@ -1,10 +1,43 @@
+import os
 import streamlit as st
-
+from streamlit_common import _get_blob_for_session_data_logging
 
 st.title('Documentation')
 
+# Currently only set up for azure using environmental variables. Other options need to be built
+def setup_log_storage():
+    if st.session_state['service_provider'] == 'azure':
+        if st.session_state['use_environmental_variables'] == True:
+            if 'blob_account_url' not in st.session_state:
+                st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
+                st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
+                st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
+                #st.session_state['blob_client_for_session_data'] = _get_blob_for_session_data_logging(filename)
+                #st.session_state['blob_name_for_global_logs'] = "app_log_data.txt"
+                #st.session_state['blob_client_for_global_data'] = _get_blob_for_global_logging(st.session_state['blob_name_for_global_logs'])
+
+
+def upload_logs_to_blob_and_cleanup():
+    # Directory holding session logs
+    log_directory = '/tmp/session_logs'
+    if os.path.exists(log_directory):
+        for log_file in os.listdir(log_directory):
+            if log_file != os.path.basename(st.session_state['local_session_data']): # don't copy the current users local data
+                # check it is not this logfile 
+                file_path = os.path.join(log_directory, log_file)
+                if os.path.isfile(file_path):
+                    # Get blob client and upload the file only when button is pressed
+                    blob_client = _get_blob_for_session_data_logging(log_file)
+                    with open(file_path, 'rb') as data:
+                        blob_client.upload_blob(data, blob_type="AppendBlob", overwrite=True)
+                        #blob_client.upload_blob(data, overwrite=True) 
+                    if log_file != "app_log_data.txt":
+                        os.remove(file_path)  # Clean up the local file after upload
+
+
 with st.sidebar:
     st.markdown('Thanks for reading the instructions. You are one of a small minority of people and you deserve a gold star!')
+
 
 
 d = '''This Question Answering service is an example of **Retrieval Augmented Generation (RAG)**. It uses a Large Language Model to answer questions based on its reference material (which you can see the in the Table of Contents page). This service is not official nor endorsed by anyone relevant. Its answers should be treated as guidance, not law. If you use these answers as the basis to perform an action and that action is illegal, there is nobody to sue or join with you in your court case. You will be on your own, with only your blind faith in Large Language Models for company. 
@@ -24,6 +57,9 @@ To reduce the chance of incorrect answers, a key feature of this service is its 
 If you want to get some insight into how this app was built, have a look [here](https://www.aleph-one.co)
 '''
 
-
-
 st.markdown(d)
+
+# Sidebar button that triggers the upload and cleanup process
+if st.sidebar.button("Persist Data"):
+    setup_log_storage()
+    upload_logs_to_blob_and_cleanup()

@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import json
 
-from streamlit_common import write_session_data_to_blob
+from streamlit_common import write_session_data_to_local_file
 from footer import footer
 
 
@@ -82,7 +82,7 @@ def clear_chat_history():
     # logger.debug("Clearing \'messages\'")
     st.session_state['chat'].reset_conversation_history()
     st.session_state['messages'] = [] 
-    write_session_data_to_blob('{"role": "action", "content": "Clear history"}')
+    write_session_data_to_local_file('{"role": "action", "content": "Clear history"}')
 
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 with st.sidebar:
@@ -112,7 +112,7 @@ def make_call_to_chat(prompt):
 
     display_assistant_response(row_to_add_to_messages)
     log_entry = {"role": "assistant", "content": llm_response_formatted_for_logs}
-    write_session_data_to_blob(json.dumps(log_entry))
+    write_session_data_to_local_file(json.dumps(log_entry))
     logger.debug("Response added the the queue")
 
 
@@ -126,7 +126,7 @@ if "user_input" in st.session_state:
 if prompt is not None and prompt != "":
     log_entry = {"role": "user", "content": prompt}
     st.session_state['messages'].append(log_entry)
-    write_session_data_to_blob(json.dumps(log_entry))
+    write_session_data_to_local_file(json.dumps(log_entry))
 
     with st.chat_message("user"):
         st.markdown(prompt)

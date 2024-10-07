@@ -1,4 +1,6 @@
 import sys
+import os
+
 import logging
 from logging.handlers import RotatingFileHandler
 import tempfile
@@ -29,9 +31,14 @@ def setup_logging(max_bytes=5 * 1024 * 1024, backup_count=3):
 
     logging.basicConfig(level=ANALYSIS_LEVEL)
 
-    # Create a temporary file for logging
-    with tempfile.NamedTemporaryFile(mode='a', delete=False) as temp_file:
-        global_logging_file_name = temp_file.name
+    # Create a file for logging
+    log_directory = '/tmp/session_logs'
+    os.makedirs(log_directory, exist_ok=True)        
+    # Generate a unique filename for each session
+    global_logging_file_name = os.path.join(log_directory, "app_log_data.txt")
+    # Clear the contents of the file if it exists
+    with open(global_logging_file_name, 'w') as file:
+        pass  # Opening in 'w' mode clears the file; no need to write anything
 
     # Set up a rotating file handler
     file_handler = RotatingFileHandler(

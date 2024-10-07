@@ -200,17 +200,6 @@ def setup_for_streamlit(insist_on_password = False):
             if not check_password():
                 st.stop()
 
-# Currently only set up for azure using environmental variables. Other options need to be built
-def setup_log_storage(filename):
-    if st.session_state['service_provider'] == 'azure':
-        if st.session_state['use_environmental_variables'] == True:
-            if 'blob_account_url' not in st.session_state:
-                st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
-                st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
-                st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
-                st.session_state['blob_client_for_session_data'] = _get_blob_for_session_data_logging(filename)
-                st.session_state['blob_name_for_global_logs'] = "app_log_data.txt"
-                st.session_state['blob_client_for_global_data'] = _get_blob_for_global_logging(st.session_state['blob_name_for_global_logs'])
 
 
 @st.cache_resource
@@ -241,13 +230,7 @@ def load_data():
 
         return chat
 
-
-def write_session_data_to_blob(text):
-    if st.session_state['service_provider'] == 'azure':
-        # Session log for user
-        st.session_state['blob_client_for_session_data'].append_block(text + "\n")
-
-def write_global_data_to_blob():
-    with open(st.session_state['global_logging_file_name'], "r") as temp_file:
-        content = temp_file.read()
-    st.session_state['blob_client_for_global_data'].upload_blob(data=content, overwrite=True)
+# rename this
+def write_session_data_to_local_file(text):
+    with open(st.session_state['local_session_data'], 'a') as file:
+        file.write(text + "\n")
