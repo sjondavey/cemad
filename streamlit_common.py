@@ -230,6 +230,37 @@ def load_data():
 
         return chat
 
+# Currently only set up for azure using environmental variables. Other options need to be built
+def setup_log_storage():
+    if st.session_state['service_provider'] == 'azure':
+        if st.session_state['use_environmental_variables'] == True:
+            if 'blob_account_url' not in st.session_state:
+                st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
+                st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
+                st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
+                #st.session_state['blob_client_for_session_data'] = _get_blob_for_session_data_logging(filename)
+                #st.session_state['blob_name_for_global_logs'] = "app_log_data.txt"
+                #st.session_state['blob_client_for_global_data'] = _get_blob_for_global_logging(st.session_state['blob_name_for_global_logs'])
+
+
+def upload_logs_to_blob_and_cleanup():
+    # Directory holding session logs
+    log_directory = '/tmp/session_logs'
+    if os.path.exists(log_directory):
+        for log_file in os.listdir(log_directory):
+            if log_file != os.path.basename(st.session_state['local_session_data']): # don't copy the current users local data
+                # check it is not this logfile 
+                file_path = os.path.join(log_directory, log_file)
+                if os.path.isfile(file_path):
+                    # Get blob client and upload the file only when button is pressed
+                    blob_client = _get_blob_for_session_data_logging(log_file)
+                    with open(file_path, 'rb') as data:
+                        blob_client.upload_blob(data, blob_type="AppendBlob", overwrite=True)
+                        #blob_client.upload_blob(data, overwrite=True) 
+                    if log_file != "app_log_data.txt":
+                        os.remove(file_path)  # Clean up the local file after upload
+
+
 # rename this
 def write_session_data_to_local_file(text):
     with open(st.session_state['local_session_data'], 'a') as file:

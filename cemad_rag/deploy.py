@@ -8,7 +8,7 @@ def deploy(base_folder):
     base_folder = ".." when running from "working" folder
 
     ''' 
-    destination = "d:/code/chat/cemad_rag"
+    destination = "e:/code/chat/cemad_rag"
 
     items_to_copy = [base_folder + "/cemad_rag/",
                      base_folder + "/.gitignore",
