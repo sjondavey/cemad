@@ -12,6 +12,7 @@ __pycache__/
 /logs
 /working
 /tmp
+/db
 
 /pdf
 /env
