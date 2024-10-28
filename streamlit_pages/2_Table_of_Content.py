@@ -22,7 +22,7 @@ st.markdown("---")
 
 with st.sidebar:
     st.markdown(f'The "User Queries" document provides additional or clarifying information. Is uses an index similar to that of the manual, but with sections like "Z.1" that are not part of CEMAD itself, to avoid confusion.')
-    st.markdown('**Note:** I have not included all the tables at this stage.')
+    st.markdown('**Note:** I have not included all the tables in this Table of Content.')
 
 def load_class_from_file(filepath):
     spec = importlib.util.spec_from_file_location("module.name", filepath)

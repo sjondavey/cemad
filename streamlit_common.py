@@ -26,13 +26,6 @@ logging.addLevelName(ANALYSIS_LEVEL, 'ANALYSIS')
 logger = logging.getLogger(__name__)
 logger.setLevel(ANALYSIS_LEVEL)
 
-# Avoid using @st.cache_resource for the OpenAI API connection.
-# Caching resources like an API connection can lead to issues since the OpenAI API client 
-# manages state, and caching might cause problems if the state changes or if there are 
-# session-specific requirements. Moreover, OpenAI API connections do not need to be reused across 
-# sessions, and caching could result in stale or shared connections, which could lead to unintended behavior.
-def _get_openai_resource(openai_key):
-    return OpenAI(api_key = openai_key)
 
 # The container will be the same for all files in the session so only connect to it once.
 @st.cache_resource
@@ -91,9 +84,8 @@ def setup_for_azure():
         if st.session_state['use_environmental_variables']:
             load_dotenv()
 
-            if 'openai_client' not in st.session_state:
-                openai_api_key = os.getenv("OPENAI_API_KEY_CEMAD")
-                st.session_state['openai_client'] = _get_openai_resource(openai_api_key)
+            if 'openai_key' not in st.session_state:
+                st.session_state['openai_key'] = os.getenv("OPENAI_API_KEY_CEMAD")
             if 'corpus_decryption_key' not in st.session_state:
                 st.session_state['corpus_decryption_key'] = os.getenv("DECRYPTION_KEY_CEMAD")
             # blob storage for global and session logging
@@ -200,6 +192,17 @@ def setup_for_streamlit(insist_on_password = False):
             if not check_password():
                 st.stop()
 
+# Currently only set up for azure using environmental variables. Other options need to be built
+def setup_log_storage(filename):
+    if st.session_state['service_provider'] == 'azure':
+        if st.session_state['use_environmental_variables'] == True:
+            if 'blob_account_url' not in st.session_state:
+                st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
+                st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
+                st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
+                st.session_state['blob_client_for_session_data'] = _get_blob_for_session_data_logging(filename)
+                st.session_state['blob_name_for_global_logs'] = "app_log_data.txt"
+                st.session_state['blob_client_for_global_data'] = _get_blob_for_global_logging(st.session_state['blob_name_for_global_logs'])
 
 
 @st.cache_resource
@@ -209,19 +212,20 @@ def load_cemad_corpus_index(key):
 
 def load_data():
     with st.spinner(text="Loading the excon documents and index - hang tight! This should take 5 seconds."):
+        embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
         corpus_index = load_cemad_corpus_index(st.session_state['corpus_decryption_key'])
         model_to_use =  "gpt-4o"
+        chat_parameters = ChatParameters(chat_model = model_to_use, api_key=st.session_state['openai_key'], temperature = 0, max_tokens = 500, token_limit_when_truncating_message_queue = 3500)
+
         rerank_algo = RerankAlgos.LLM
-        rerank_algo.params["openai_client"] = st.session_state['openai_client']
+        rerank_algo.params["openai_client"] = chat_parameters.openai_client
         rerank_algo.params["model_to_use"] = model_to_use
         rerank_algo.params["user_type"] = corpus_index.user_type
         rerank_algo.params["corpus_description"] = corpus_index.corpus_description
         rerank_algo.params["final_token_cap"] = 5000 # can go large with the new models
 
-        embedding_parameters = EmbeddingParameters("text-embedding-3-large", 1024)
-        chat_parameters = ChatParameters(chat_model = model_to_use, temperature = 0, max_tokens = 500)
         
-        chat = CorpusChatCEMAD(openai_client = st.session_state['openai_client'],
+        chat = CorpusChatCEMAD(
                           embedding_parameters = embedding_parameters, 
                           chat_parameters = chat_parameters, 
                           corpus_index = corpus_index,
@@ -230,38 +234,14 @@ def load_data():
 
         return chat
 
-# Currently only set up for azure using environmental variables. Other options need to be built
-def setup_log_storage():
+
+
+def write_session_data_to_blob(text):
     if st.session_state['service_provider'] == 'azure':
-        if st.session_state['use_environmental_variables'] == True:
-            if 'blob_account_url' not in st.session_state:
-                st.session_state['blob_account_url'] = "https://chatlogsaccount.blob.core.windows.net/"
-                st.session_state['blob_container_name'] = os.getenv('BLOB_CONTAINER', 'cemadtest01') # set a default in case 'BLOB_CONTAINER' is not set
-                st.session_state['blob_store_key'] = os.getenv("CHAT_BLOB_STORE")
-                #st.session_state['blob_client_for_session_data'] = _get_blob_for_session_data_logging(filename)
-                #st.session_state['blob_name_for_global_logs'] = "app_log_data.txt"
-                #st.session_state['blob_client_for_global_data'] = _get_blob_for_global_logging(st.session_state['blob_name_for_global_logs'])
+        # Session log for user
+        st.session_state['blob_client_for_session_data'].append_block(text + "\n")
 
-
-def upload_logs_to_blob_and_cleanup():
-    # Directory holding session logs
-    log_directory = '/tmp/session_logs'
-    if os.path.exists(log_directory):
-        for log_file in os.listdir(log_directory):
-            if log_file != os.path.basename(st.session_state['local_session_data']): # don't copy the current users local data
-                # check it is not this logfile 
-                file_path = os.path.join(log_directory, log_file)
-                if os.path.isfile(file_path):
-                    # Get blob client and upload the file only when button is pressed
-                    blob_client = _get_blob_for_session_data_logging(log_file)
-                    with open(file_path, 'rb') as data:
-                        blob_client.upload_blob(data, blob_type="AppendBlob", overwrite=True)
-                        #blob_client.upload_blob(data, overwrite=True) 
-                    if log_file != "app_log_data.txt":
-                        os.remove(file_path)  # Clean up the local file after upload
-
-
-# rename this
-def write_session_data_to_local_file(text):
-    with open(st.session_state['local_session_data'], 'a') as file:
-        file.write(text + "\n")
+def write_global_data_to_blob():
+    with open(st.session_state['global_logging_file_name'], "r") as temp_file:
+        content = temp_file.read()
+    st.session_state['blob_client_for_global_data'].upload_blob(data=content, overwrite=True)

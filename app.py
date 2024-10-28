@@ -1,3 +1,11 @@
+# https://docs.streamlit.io/develop/api-reference/cli/run
+    # If you need to pass an argument to your script, run it as follows:
+    #     streamlit run your_app.py "my list" of arguments
+    # Within your script, the following statement will be true:
+    #     sys.argv[0] == "your_app.py"
+    #     sys.argv[1] == "my list"
+    #     sys.argv[2] == "of"
+    #     sys.argv[3] == "arguments"
 
 import streamlit as st
 import traceback
@@ -8,7 +16,9 @@ from datetime import datetime
 from streamlit_common import setup_for_azure, \
                              setup_for_streamlit, \
                              load_data, \
-                             write_session_data_to_local_file
+                             setup_log_storage, \
+                             write_global_data_to_blob, \
+                             write_session_data_to_blob
 
 import logging
 from logging_config import setup_logging
@@ -33,32 +43,13 @@ if 'global_logging_file_name' not in st.session_state:
 
 # Start with username because we need it to create the log file
 if 'user_id' not in st.session_state:
-    now = datetime.now()
-    date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
-    st.session_state['user_id'] = date_time_str
-    # st.session_state['blob_name_for_session_logs'] = date_time_str + "_user_id.log"
-    session_id = date_time_str + "_user_id.log"
-    # Directory to store session logs
-    log_directory = '/tmp/session_logs'
-    os.makedirs(log_directory, exist_ok=True)        
-    # Generate a unique filename for each session
-    st.session_state['local_session_data'] = os.path.join(log_directory, session_id)
-
-    logger.log(ANALYSIS_LEVEL, f"New session for user {st.session_state['user_id']}")
+        now = datetime.now()
+        date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
+        st.session_state['user_id'] = date_time_str
+        st.session_state['blob_name_for_session_logs'] = date_time_str + "_user_id.log"
+        logger.log(ANALYSIS_LEVEL, f"New session for user {st.session_state['user_id']}")
 
 try:
-    # https://docs.streamlit.io/develop/api-reference/cli/run
-    # If you need to pass an argument to your script, run it as follows:
-    #     streamlit run your_app.py "my list" of arguments
-    # Within your script, the following statement will be true:
-    #     sys.argv[0] == "your_app.py"
-    #     sys.argv[1] == "my list"
-    #     sys.argv[2] == "of"
-    #     sys.argv[3] == "arguments"
-
-
-        
-
         
     if 'service_provider' not in st.session_state:
         # can only be one of 'azure' or 'streamlit'
@@ -85,6 +76,14 @@ try:
     pg = st.navigation({"Other things to do": [ask_question_page, toc_question_page, bop_page, section_lookup_page, documentation_page]})
     pg.run()
 
+    setup_log_storage(st.session_state['blob_name_for_session_logs'])
+    # copy the existing local log file to blob storage. This is done at the beginning of the session becasue
+    # streamlit does not offer a direct session termination even. It is not idea as the logs will always be
+    # one session behind
+    if "global_logs_copied_to_storage" not in st.session_state:
+        write_global_data_to_blob()
+        st.session_state["global_logs_copied_to_storage"] = True
+
 
 except Exception as e:
     error_traceback = traceback.format_exc()
@@ -92,5 +91,5 @@ except Exception as e:
     logger = logging.getLogger(__name__)
     logger.error(error_string)
     # write_global_data_to_blob()
-    write_session_data_to_local_file(error_string)
+    # write_session_data_to_blob(error_string)
     raise e
