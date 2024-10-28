@@ -63,7 +63,7 @@ Provide alternative questions in a pipe-delimited list without additional text o
     sorted_questions = [item[0] for item in alternative_questions_with_search_results]
     
     if len(alternative_questions_with_search_results) == 0:
-        assistant_response = NoAnswerResponse(classification = NoAnswerClassification.NO_DATA)
+        assistant_response = NoAnswerResponse(classification = NoAnswerClassification.NO_RELEVANT_DATA)
         response = {"role": "assistant", "content": assistant_response.create_openai_content(), "assistant_response": assistant_response}
     else:
         assistant_response = AlternativeQuestionResponse(alternatives = sorted_questions)

@@ -90,6 +90,6 @@ except Exception as e:
     error_string = "user: " + st.session_state["user_id"] + ": \n" + error_traceback
     logger = logging.getLogger(__name__)
     logger.error(error_string)
-    # write_global_data_to_blob()
-    # write_session_data_to_blob(error_string)
+    write_global_data_to_blob()
+    write_session_data_to_blob(error_string)
     raise e

@@ -11,7 +11,7 @@ with st.sidebar:
 
 
 
-d = '''This Question Answering service is an example of **Retrieval Augmented Generation (RAG)**. It uses a Large Language Model to answer questions based on its reference material (see the [Table of Contents](table_of_content) page). This service is not official nor endorsed by anyone relevant. Its answers should be treated as guidance, not law. You should always read the references quoted in the answer to make sure they are appropriate.
+d = '''This Question Answering service is an example of **Retrieval Augmented Generation (RAG)**. It uses a Large Language Model to answer questions based on its reference material (see the [Table of Contents](Table_of_Content) page). This service is not official nor endorsed by anyone relevant. Its answers should be treated as guidance, not law. You should always read the references quoted in the answer to make sure they are appropriate.
 
 The model works in two modes:
 1. Strict RAG: Will only answer if it can use reference material to answer the question.
