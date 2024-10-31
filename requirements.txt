@@ -101,7 +101,7 @@ pyzmq==23.2.1
 rapidfuzz==3.7.0
 referencing==0.35.1
 regex==2023.12.25
-regulations_rag @ git+https://github.com/sjondavey/regulations_rag.git@b3a9b0b34d2de28c95d83b240439abcd4bf0fde5
+regulations_rag @ git+https://github.com/sjondavey/regulations_rag.git@bec37678e11198079e824211a061ad7f88597d5ba
 requests==2.31.0
 rich==13.9.2
 rpds-py==0.20.0

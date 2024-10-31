@@ -3,9 +3,8 @@ from regulations_rag.corpus_chat import CorpusChat
 from regulations_rag.rerank import RerankAlgos, rerank
 from regulations_rag.embeddings import get_ada_embedding
 from regulations_rag.data_classes import NoAnswerResponse, NoAnswerClassification
-from regulations_rag.corpus_chat_tools import CorpusChatData
-from regulations_rag.path_search import similarity_search
-from cemad_rag.path_suggest_alternatives import suggest_alternative_questions
+from regulations_rag.path_search import PathSearch
+from cemad_rag.path_suggest_alternatives import PathSuggestAlternatives
 
 import logging
 logger = logging.getLogger(__name__)
@@ -26,7 +25,13 @@ class CorpusChatCEMAD(CorpusChat):
                  rerank_algo = RerankAlgos.NONE,   
                  user_name_for_logging = 'test_user'): 
         super().__init__(embedding_parameters, chat_parameters, corpus_index, rerank_algo, user_name_for_logging)
+        self.path_suggest_alternatives = self._create_path_suggest_alternatives()
 
+    def _create_path_suggest_alternatives(self):
+        return PathSuggestAlternatives(chat_parameters = self.chat_parameters, 
+                                     corpus_index = self.index, 
+                         embedding_parameters = self.embedding_parameters, 
+                         rerank_algo = self.rerank_algo)
 
 
 
@@ -39,21 +44,20 @@ class CorpusChatCEMAD(CorpusChat):
 
         super().execute_path_no_retrieval_no_conversation_history(user_content)
         if isinstance(self.messages_intermediate[-1]["assistant_response"], NoAnswerResponse):
-            logger.log(ANALYSIS_LEVEL, f"{self.user_name}: query_no_rag_data() responded with a NoAnswerResponse. Evaluating alternative questions...")
-            if self.progress_callback:
-                self.progress_callback("Unable to answer the question. Evaluating alternative questions...")
+            if self.messages_intermediate[-1]["assistant_response"].classification != NoAnswerClassification.QUESTION_NOT_RELEVANT:
+                logger.log(ANALYSIS_LEVEL, f"{self.user_name}: query_no_rag_data() responded with a NoAnswerResponse. Evaluating alternative questions...")
+                if self.progress_callback:
+                    self.progress_callback("Unable to answer the question. Evaluating alternative questions...")
 
-            # Remove the last message from the intermediate messages
-            del self.messages_intermediate[-1]
-            corpus_chat_data = CorpusChatData(corpus_index = self.index, 
-                                                    chat_parameters = self.chat_parameters, 
-                                                    message_history = self.messages_intermediate, 
-                                                    current_user_message = {"role": "user", "content": user_content})
-            result = suggest_alternative_questions(corpus_chat_data = corpus_chat_data, 
-                                                embedding_parameters = self.embedding_parameters, 
-                                                rerank_algo = self.rerank_algo)
-            self.append_content(result)
-            logger.log(ANALYSIS_LEVEL, f"{self.user_name}: CorpusChatCEMAD.execute_path_no_retrieval_no_conversation_history() replaced the CorpusChat version's answer")
+                # Remove the last message from the intermediate messages
+                del self.messages_intermediate[-1]
+
+                result = self.path_suggest_alternatives.suggest_alternative_questions(message_history = self.messages_intermediate, 
+                                                            current_user_message = {"role": "user", "content": user_content})
+                self.append_content(result)
+                logger.log(ANALYSIS_LEVEL, f"{self.user_name}: CorpusChatCEMAD.execute_path_no_retrieval_no_conversation_history() replaced the CorpusChat version's answer")
+            else:
+                logger.log(ANALYSIS_LEVEL, f"{self.user_name}: query_no_rag_data() responded with a NoAnswerResponse citing that the question was not relevant")
 
         return
 
@@ -62,17 +66,14 @@ class CorpusChatCEMAD(CorpusChat):
     returns workflow_triggered, df_definitions, df_search_sections
     """
     def execute_path_workflow(self, workflow_triggered, user_content):
+        self._track_path("CorpusChatCEMAD.execute_path_workflow")
         if workflow_triggered == "documentation":
             logger.log(ANALYSIS_LEVEL, f"{self.user_name}: Enriching user request for documentation ...")
             if self.progress_callback:
                 self.progress_callback("Enriching user request for documentation...")
 
             user_content = self.enrich_user_request_for_documentation(user_content)
-            chat_data_for_search = CorpusChatData(corpus_index = self.index, 
-                                                    chat_parameters = self.chat_parameters, 
-                                                    message_history = self.messages_intermediate, 
-                                                    current_user_message = {"role": "user", "content": user_content})
-            workflow_triggered, df_definitions, df_search_sections = similarity_search(chat_data_for_search, self.embedding_parameters, self.rerank_algo)
+            workflow_triggered, df_definitions, df_search_sections = self.path_search.similarity_search(user_question = user_content)
 
             logger.log(ANALYSIS_LEVEL, f"{self.user_name}: Running RAG for documentation ...")
             if self.progress_callback:
@@ -97,6 +98,8 @@ class CorpusChatCEMAD(CorpusChat):
         - str: The enhanced documentation request generated by the model.
         """
         logger.info("Enriching user request for documentation based on conversation history.")
+        self._track_path("CorpusChatCEMAD.enrich_user_request_for_documentation")
+
 
         # Preparing the initial system message to guide the model in request generation
         system_content = "You are assisting a user to construct a stand alone request for documentation from a conversation. \
@@ -108,7 +111,7 @@ At the end of the conversation they have asked a question about the documentatio
         messages.append({'role': 'user', 'content': user_content})
         
         # Truncate messages list to meet a specific token limit and ensure there is space for the system message
-        system_message={'role': 'system', 'content': system_content}
+        system_message=[{'role': 'system', 'content': system_content}]
         # NOTE, the truncated_messages will now contain the system message
 
         # Generate the enhanced documentation request using the specified AI model

@@ -45,40 +45,10 @@ class TestCEMADChat:
                       rerank_algo = rerank_algo,   
                       user_name_for_logging = 'test_user')
 
+    regression_test_enabled = False
 
     def test_construction(self):
         assert True
-
-
-    # def test_reformat_assistant_answer(self):
-    #     df_definitions = pd.DataFrame() 
-    #     df_sections = pd.DataFrame() 
-    #     prefix = self.chat.Prefix.ALTERNATIVE.value
-    #     alt_questions = " Can an individual use their credit card for online purchases? | Can a company use its credit card for online purchases?"
-    #     alt_questions_as_array = [substr.strip() for substr in alt_questions.split('|') if substr]
-    #     result = {"success": True, "path": prefix, "alternatives": alt_questions_as_array} 
-    #     text_response_for_openai = self.chat.reformat_assistant_answer(result, df_definitions, df_sections)
-
-    #     expected_response = f"The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however are different phrasings of the question which should find some reference material in the {self.chat.index.corpus_description}: Perhaps try\n\n" 
-    #     counter = 1
-    #     for question in alt_questions_as_array:
-    #         expected_response = expected_response + "\n" + str(counter) + ") " + question
-    #         counter = counter + 1
-    #     assert text_response_for_openai == expected_response
-    #     # hard coded
-    #     expected_response = "The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however are different phrasings of the question which should find some reference material in the South African 'Currency and Exchange Manual for Authorised Dealers' (CEMAD): Perhaps try\n\n\n1) Can an individual use their credit card for online purchases?\n2) Can a company use its credit card for online purchases?"
-    #     assert text_response_for_openai == expected_response
-        
-    #     # now with only one alternative
-    #     alt_questions = " Can an individual use their credit card for online purchases?"
-    #     alt_questions_as_array = [substr.strip() for substr in alt_questions.split('|') if substr]
-    #     result = {"success": True, "path": prefix, "alternatives": alt_questions_as_array} 
-    #     text_response_for_openai = self.chat.reformat_assistant_answer(result, df_definitions, df_sections)
-    #     # hard coded
-    #     expected_response = "The question you posed did not contain any hits in the database. There are many reasons why this could be the case. Here however is a different phrasing of the question which should find some reference material in the South African 'Currency and Exchange Manual for Authorised Dealers' (CEMAD). Perhaps try:\n\n\nCan an individual use their credit card for online purchases?"
-    #     assert text_response_for_openai == expected_response
-        
-
 
     @patch.object(ChatParameters, 'get_api_response')
     def test_user_provides_input(self, mock_get_api_response):
@@ -139,8 +109,54 @@ class TestCEMADChat:
 
         assert self.chat.messages_intermediate[-1]["role"] == "assistant"
         assert isinstance(self.chat.messages_intermediate[-1]["assistant_response"], NoAnswerResponse)
-        assert self.chat.messages_intermediate[-1]["assistant_response"].classification == NoAnswerClassification.NO_DATA
+        assert self.chat.messages_intermediate[-1]["assistant_response"].classification == NoAnswerClassification.NO_RELEVANT_DATA
 
 
     # def test_execute_path_no_retrieval_with_conversation_history(self):
     #     assert False
+
+    def test_regression(self):
+        if not self.regression_test_enabled:
+            pytest.skip("Skipping regression test")
+
+        #Because these will make calls to the LLM, they may fail for statistical reasons
+        self.chat.reset_conversation_history()
+        self.chat._reset_execution_path()
+
+        self.chat.strict_rag = False
+        # should answer fine
+        self.chat.user_provides_input("When importing goods, can I buy enough foreign currency to cover the associated insurance costs?")
+        assert self.chat.messages_intermediate[-1]["role"] == "assistant"
+        assert isinstance(self.chat.messages_intermediate[-1]["assistant_response"], AnswerWithRAGResponse)
+        expected_path = [
+            "CorpusChat.user_provides_input",
+            "PathSearch.similarity_search",
+            "CorpusChat.run_base_rag_path",
+            "PathRAG.perform_RAG_path",
+            'PathRAG.resource_augmented_query',
+            'PathRAG.check_response_RAG',
+            'PathRAG.extract_used_references'
+        ]
+        assert self.chat.execution_path == expected_path
+
+
+        # followup question to test workflow
+        self.chat._reset_execution_path()
+        self.chat.user_provides_input("What documentation is required?")
+        assert self.chat.messages_intermediate[-1]["role"] == "assistant"
+        assert isinstance(self.chat.messages_intermediate[-1]["assistant_response"], AnswerWithRAGResponse)
+        expected_path = [
+            "CorpusChat.user_provides_input",
+            "PathSearch.similarity_search",
+            'CorpusChatCEMAD.execute_path_workflow',
+            'CorpusChatCEMAD.enrich_user_request_for_documentation',
+            "CorpusChat.run_base_rag_path",
+            "PathRAG.perform_RAG_path",
+            'PathRAG.resource_augmented_query',
+            'PathRAG.check_response_RAG',
+            'PathRAG.extract_used_references'
+        ]
+        assert self.chat.execution_path == expected_path
+
+
+        self.chat.strict_rag = True

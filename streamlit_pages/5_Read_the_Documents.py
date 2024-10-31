@@ -27,7 +27,7 @@ At this stage, the source material is ONLY the Exchage Contol Manual for Authori
 
 If you want to get some insight into how this app was built, have a look [here](https://www.aleph-one.co).
 
-If you want to request specific features or source documentation to be added, reach out to me on <a href="https://www.linkedin.com/in/steven-davey-12295415" target="_blank">LinkedIn</a>.
+If you want to request specific features or source documentation to be added, reach out to me on [LinkedIn](https://www.linkedin.com/in/steven-davey-12295415).
 
 '''
 

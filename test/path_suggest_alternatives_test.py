@@ -1,10 +1,10 @@
 import os
 from unittest.mock import patch
-from regulations_rag.corpus_chat_tools import CorpusChatData, ChatParameters
+from regulations_rag.corpus_chat_tools import ChatParameters
 from regulations_rag.data_classes import AlternativeQuestionResponse, NoAnswerResponse, NoAnswerClassification
 from regulations_rag.embeddings import EmbeddingParameters
 from regulations_rag.rerank import RerankAlgos
-from cemad_rag.path_suggest_alternatives import suggest_alternative_questions
+from cemad_rag.path_suggest_alternatives import PathSuggestAlternatives
 from cemad_rag.cemad_corpus_index import CEMADCorpusIndex
 
 @patch.object(ChatParameters, 'get_api_response')
@@ -34,28 +34,26 @@ def test_suggest_alternative_questions(mock_get_api_response):
 
     user_content = "Can I use my credit card online?"
     user_message = {"role": "user", "content": user_content}
-    chat_data = CorpusChatData(
-        corpus_index=corpus_index,  
-        chat_parameters=chat_parameters,  
-        message_history=[], # no chat history
-        current_user_message=user_message
-    )
     embedding_parameters = EmbeddingParameters(embedding_model = "text-embedding-3-large", embedding_dimensions = 1024)
 
+    path = PathSuggestAlternatives(chat_parameters = chat_parameters, 
+                                                        corpus_index = corpus_index, 
+                                                        embedding_parameters = embedding_parameters, 
+                                                        rerank_algo = rerank_algo)
 
     # mock an empty response from the LLM
     mock_get_api_response.return_value = ""
-    response = suggest_alternative_questions(corpus_chat_data = chat_data, embedding_parameters = embedding_parameters, rerank_algo = rerank_algo)
+    response = path.suggest_alternative_questions(message_history = [], current_user_message = user_message)
 
     assert response["role"] == "assistant"
     assert isinstance(response["assistant_response"], NoAnswerResponse)
-    assert response["assistant_response"].classification == NoAnswerClassification.NO_DATA
-    assert response["content"] == NoAnswerClassification.NO_DATA.value
+    assert response["assistant_response"].classification == NoAnswerClassification.NO_RELEVANT_DATA
+    assert response["content"] == NoAnswerClassification.NO_RELEVANT_DATA.value
 
     api_response = "Can an individual use their credit card for online purchases?|Can a company use its credit card for online purchases?"
     api_response_as_list = ["Can an individual use their credit card for online purchases?","Can a company use its credit card for online purchases?"]
     mock_get_api_response.return_value = api_response
-    response = suggest_alternative_questions(corpus_chat_data = chat_data, embedding_parameters = embedding_parameters, rerank_algo = rerank_algo)
+    response = path.suggest_alternative_questions(message_history = [], current_user_message = user_message)
     assert response["role"] == "assistant"
     assert isinstance(response["assistant_response"], AlternativeQuestionResponse)
     assert response["assistant_response"].alternatives == api_response_as_list
